@@ -1,0 +1,12 @@
+# build workspace
+.work/
+
+# never commit firmware / backups / built images (proprietary + huge)
+*.img
+*.bin
+backup_nv/
+vbmeta_disable.img
+super_unkiosk.img
+
+# APKs are redistributed from their own sources
+*.apk
