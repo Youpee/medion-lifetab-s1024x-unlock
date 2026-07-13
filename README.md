@@ -1,8 +1,9 @@
 # Medion Lifetab S1024X — Aldi kiosk removal (unkiosk)
 
 Unlock **Medion Lifetab S1024X** tablets that Aldi shipped locked into the kiosk launcher
-**AldiTalkFilialApp**: remove the kiosk, install your own launcher, enable ADB — and use
-the tablet as a normal Android device again.
+**AldiTalkFilialApp**: remove the kiosk and install your own launcher, so you get a normal,
+usable Android home screen again. (It also *tries* to enable ADB — best-effort, see the note
+below; the guaranteed win is the kiosk removal + your launcher.)
 
 Everything is done **offline by editing the system image over BROM** (mtkclient), with
 **no adb and no GSI** — the stock ROM boots normally, TEE/keymaster keep working. Fully
@@ -93,7 +94,7 @@ scripts/backup-stock.sh
 #     -> "Successfully wrote seccfg" = done ("already unlocked" is fine too).
 #        This wipes /data on next boot — expected.
 
-# 1) build the image: remove kiosk + enable ADB + add your launcher
+# 1) build the image: remove kiosk + add your launcher (+ best-effort ADB, see "After boot")
 #    (uses launchers/KISS.apk that setup.sh downloaded; or pass your own apk)
 scripts/build-image.sh
 #   custom launcher + extra apks: scripts/build-image.sh MyLauncher.apk App1.apk App2.apk
@@ -120,17 +121,28 @@ scripts/restore-stock.sh    # restores the factory Aldi ROM
 2. Erases the AVB footer of `system` (verity is turned off via the vbmeta_disable step).
 3. Grows the ext4 (+64 MB) to fit extra APKs.
 4. `prop.default`: `ro.adb.secure=0`, `ro.debuggable=1`, `persist.sys.usb.config=mtp,adb`
-   plus an init override `zz-forceadb.rc` (adbd as root, no on-screen auth prompt).
+   plus an init override `zz-forceadb.rc` — a **best-effort** ADB enable (often the USB gadget
+   still won't come up on this build; see "After boot").
 5. Removes `AldiTalkFilialApp.apk` (kiosk is no longer HOME).
 6. Installs your launcher (and extra APKs) into `/system/app/<Name>/` labeled `system_file:s0`.
 7. Rebuilds `super` (system + stock vendor/product), verifies size / `lpdump`.
 
-## After boot
-- Your launcher comes up. ADB is on (root, no auth): from a PC `adb shell id` → uid=0.
-  From there do whatever you like (`adb install` apps, change settings, etc.).
-- If the USB gadget doesn't come up by itself on some builds, switching USB to
-  "File transfer" from the notification shade/settings usually helps; normally `mtp,adb`
-  composes fine.
+## After boot — what you actually get (honest)
+- **Your launcher comes up — guaranteed.** No more Aldi kiosk; a normal home screen.
+- **ADB is best-effort, and on our tablets it did NOT come up.** The image sets
+  `ro.debuggable=1`, `ro.adb.secure=0`, `persist.sys.usb.config=mtp,adb` + a force rc, but on
+  this stripped Medion **`user` build** the USB gadget usually doesn't compose (the framework
+  keeps `adb_enabled=0`), so `adb devices` may show nothing. Harmless if it doesn't work.
+- **Developer options crash.** Tapping *Build number* 7× does turn you into a "developer",
+  but **opening** Settings → System → *Developer options* **crashes Settings** on this build,
+  so you can't flip USB debugging from the UI either. (Settings is heavily stripped here — no
+  search, no USB menu.) The notification shade and *recents* button also don't work.
+- **How to add apps without ADB/Play:** either bake them in at build time
+  (`scripts/build-image.sh KISS.apk App1.apk App2.apk`), or download an APK in a browser on
+  the tablet and install it (allow "unknown sources" when prompted).
+- **Want reliable ADB / root / working shade & recents?** Those need root or a permissive
+  SELinux policy on this enforcing `user` build — the realistic route is patching `boot` with
+  Magisk. For most people, "kiosk gone + a launcher + sideload apps" is already enough.
 
 ## Known gotchas
 - **`user` build + enforcing SELinux**: on the stripped-down Medion build, the notification

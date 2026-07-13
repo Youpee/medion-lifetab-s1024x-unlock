@@ -14,3 +14,4 @@ sudo ./venv/bin/python mtk.py w super,vbmeta,vbmeta_system,vbmeta_vendor,dtbo,bo
 sudo ./venv/bin/python mtk.py e userdata,metadata,md_udc,cache
 sudo ./venv/bin/python mtk.py reset
 echo "DONE. Factory Aldi stock restored."
+echo "(To unlock again later: scripts/build-image.sh -> make-vbmeta-disable.sh -> flash.sh)"

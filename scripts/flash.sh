@@ -19,3 +19,5 @@ sudo ./venv/bin/python mtk.py e userdata,metadata,md_udc,cache
 sudo ./venv/bin/python mtk.py reset
 echo "DONE. Unplug and power the tablet on — your launcher will come up."
 echo "      (first boot after the data wipe may take a couple of minutes)"
+echo
+echo "Next (once it boots to your launcher): scripts/clean.sh   # free disk space"

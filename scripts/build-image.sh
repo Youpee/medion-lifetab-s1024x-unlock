@@ -120,4 +120,4 @@ GOT=$(stat -c %s "$OUT")
 lpdump "$OUT" | grep -qE "Name: system" && echo "  OK lpdump readable"
 echo
 echo "DONE: $OUT"
-echo "Flash with: scripts/flash.sh $OUT   (run scripts/make-vbmeta-disable.sh first)"
+echo "Next: scripts/make-vbmeta-disable.sh   (then: scripts/flash.sh $OUT vbmeta_disable.img)"
