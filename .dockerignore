@@ -1,0 +1,3 @@
+# the Dockerfile only installs packages; keep the build context tiny (don't ship the 4 GB image etc.)
+*
+!Dockerfile

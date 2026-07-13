@@ -29,14 +29,16 @@ License: MIT.
 | BROM | unprotected (SBC/SLA/DAA=false) → mtkclient works |
 | Kiosk | `/system/priv-app/AldiTalkFilialApp` (the only HOME launcher in stock) |
 
-## Platform support
-- **Arch Linux — tested / first-class** (the single `android-tools` package gives avbtool +
-  lpmake/lpunpack/lpdump + simg2img, so `setup.sh` "just works").
-- **Other Linux (Debian/Ubuntu/Fedora)** — `setup.sh` installs what the repos have and warns
-  about anything missing (`lpmake`/`avbtool` aren't always packaged there yet).
-- **Windows / macOS** — not supported by the shell scripts directly. Planned: a Docker image
-  so the offline image **build** runs on any OS. The USB steps (backup/flash via mtkclient)
-  still need native USB — on Windows use WSL2 + `usbipd-win`, or run mtkclient natively.
+## Platform support — the build runs in Docker, so it works everywhere
+- **Build** (extract `system`, remove the kiosk, inject a launcher, repack `super`) runs inside
+  a container, so it works on **Linux, Windows and macOS** — that's `scripts/docker-build.sh`.
+  On **Arch/Linux** you can also build natively without Docker (`scripts/build-image.sh`).
+- **Get a container engine:** Linux → `scripts/setup.sh` installs **podman** (rootless, no
+  daemon/group hassle); **Windows/macOS** → install **Docker Desktop**
+  (https://www.docker.com/products/docker-desktop).
+- **USB is NOT in Docker.** `backup-stock.sh`, the unlock and `flash.sh` talk to the tablet over
+  USB via native **mtkclient** (Python): Linux runs it directly; on **Windows** use **WSL2 +
+  usbipd-win** (or native mtkclient + WinUSB/Zadig); **macOS** runs mtkclient natively.
 
 ## Requirements
 - **~15 GB free disk space** on the PC — the stock `super` backup alone is 4 GB, and the
@@ -78,11 +80,16 @@ Notes:
 
 ## Steps
 
-Run everything from the repo root:
+**Arch quick start (clone + install everything, one line):**
 ```bash
-git clone https://github.com/Youpee/medion-lifetab-s1024x-unlock && cd medion-lifetab-s1024x-unlock
+git clone https://github.com/Youpee/medion-lifetab-s1024x-unlock && cd medion-lifetab-s1024x-unlock && scripts/setup.sh
+```
 
-# 0a) one-time: install all dependencies + mtkclient (+ downloads KISS launcher)
+Then run the rest from the repo root:
+```bash
+# (already inside the cloned folder)
+
+# 0a) one-time: install all dependencies + mtkclient (+ downloads KISS launcher)  [Arch]
 scripts/setup.sh
 
 # 0b) REQUIRED: full stock backup (your safety net + donor for the build)
@@ -94,31 +101,52 @@ scripts/backup-stock.sh
 #     -> "Successfully wrote seccfg" = done ("already unlocked" is fine too).
 #        This wipes /data on next boot — expected.
 
-# 1) build the image: remove kiosk + add your launcher (+ best-effort ADB, see "After boot")
-#    (uses launchers/KISS.apk that setup.sh downloaded; or pass your own apk)
-scripts/build-image.sh
-#   custom launcher + extra apks: scripts/build-image.sh MyLauncher.apk App1.apk App2.apk
+# 1) build the flashable image IN A CONTAINER (works on any OS with Docker/Podman)
+#    -> produces super_unkiosk.img + vbmeta_disable.img (remove kiosk, add launcher, +best-effort ADB)
+scripts/docker-build.sh
+#   custom launcher + extra apks: scripts/docker-build.sh launchers/MyLauncher.apk launchers/App1.apk
+#   native alternative (Arch/Linux, no Docker): scripts/build-image.sh && scripts/make-vbmeta-disable.sh
 
-# 2) generate a vbmeta with AVB verification disabled
-#    (otherwise the modified /system won't boot)
-scripts/make-vbmeta-disable.sh
-
-# 3) flash (BROM) + wipe /data
+# 2) flash (BROM) + wipe /data
 scripts/flash.sh super_unkiosk.img vbmeta_disable.img
 
-# 4) when the flash finishes: unplug and power the tablet on — that's it.
+# 3) when the flash finishes: unplug and power the tablet on — that's it.
 #    Your launcher comes up instead of the Aldi kiosk.
 #    (the very first boot after a data wipe may take a couple of minutes — normal)
 
-# 5) (optional) once it works, free disk space — removes the ~4 GB build output
+# 4) (optional) once it works, free disk space — removes the ~4 GB build output
 #    and .work, but KEEPS your stock backup (your only way back to stock):
-scripts/clean.sh
+scripts/clean.sh          # or: scripts/clean.sh --all  (also removes the container image + KISS)
 ```
 
 Revert anytime:
 ```bash
 scripts/restore-stock.sh    # restores the factory Aldi ROM
 ```
+
+## Build with Docker (non-Arch / Windows / macOS)
+On **Arch** just use the native flow above — no Docker. On **other systems** you can run the
+offline build in a container instead of installing android-tools/e2fsprogs/avbtool yourself:
+
+```bash
+# after: git clone ... && cd ...   and after you have a stock backup (see below)
+scripts/docker-build.sh            # builds super_unkiosk.img + vbmeta_disable.img in a container
+#   custom launcher: put it in launchers/ and: scripts/docker-build.sh launchers/MyLauncher.apk
+```
+How it works: your repo stays on your disk; the container only provides the build tools and
+writes the output back into your folder (owned by you). Costs ~1.2 GB for the toolchain image
+(plus the usual build workspace).
+
+**The USB steps are NOT in Docker.** `backup-stock.sh`, the bootloader unlock, and `flash.sh`
+talk to the tablet over USB, which Docker can't reliably pass through on Windows/macOS. So:
+1. Install **mtkclient** natively (it's just Python) + a USB driver
+   (Windows: WinUSB via Zadig; or run everything inside **WSL2** with `usbipd-win`).
+2. `backup-stock.sh` → unlock → `docker-build.sh` (or native `build-image.sh`) → `flash.sh`.
+
+> **USB note:** in theory USB should work out of the box, but it's **not guaranteed** —
+> MediaTek BROM + USB drivers vary by machine/OS. If mtkclient can't see the tablet, that's a
+> driver/OS-level thing beyond this repo — search Google or ask an AI assistant. We can't fix
+> USB drivers from here.
 
 ## What build-image.sh does
 1. Extracts `system/vendor/product` from your `backup_nv/super.bin`.
@@ -171,6 +199,8 @@ scripts/
   flash.sh               # flash super + vbmeta_disable (BROM)
   restore-stock.sh       # restore stock
   clean.sh               # free disk space (removes regenerable build artifacts; keeps backup)
+  docker-build.sh        # build the image in a container (non-Arch / Windows / macOS)
+Dockerfile               # build toolchain image (for docker-build.sh)
 ```
 
 ## Bonus: use the tablet as a wireless second monitor

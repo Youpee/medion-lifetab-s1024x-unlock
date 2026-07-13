@@ -15,22 +15,25 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 say(){ printf '\n=== %s ===\n' "$*"; }
 have(){ command -v "$1" >/dev/null 2>&1; }
 
-say "1) System packages"
+say "1) Base tools + container engine (podman)"
+# The build tools (avbtool/lpmake/e2fsprogs) run INSIDE the container (scripts/docker-build.sh),
+# so the host only needs: git/python/openssl/curl/libusb + a container engine + mtkclient.
+# (android-tools/e2fsprogs are also installed on Arch so the native scripts/build-image.sh works too.)
 if have pacman; then
-  sudo pacman -S --needed --noconfirm android-tools e2fsprogs python openssl git libusb
+  sudo pacman -S --needed --noconfirm git python openssl curl libusb podman android-tools e2fsprogs
 elif have apt; then
   sudo apt update
-  sudo apt install -y git python3 python3-venv python3-pip openssl e2fsprogs \
-       libusb-1.0-0 android-sdk-libsparse-utils || true
-  echo "NOTE (Debian/Ubuntu): lpmake/lpunpack/lpdump and avbtool are usually NOT in the repos."
-  echo "  Get them from AOSP 'android-tools'/'aftv-tools' builds or pip (avbtool), then re-run."
+  sudo apt install -y git python3 python3-venv python3-pip openssl curl libusb-1.0-0 podman
 elif have dnf; then
-  sudo dnf install -y git python3 openssl e2fsprogs libusbx android-tools || true
-  echo "NOTE (Fedora): if lpmake/lpunpack/avbtool are missing, install AOSP android-tools manually."
+  sudo dnf install -y git python3 openssl curl libusbx podman
 else
-  echo "Unknown package manager. Install manually: android-tools (avbtool,lpmake,lpunpack,"
-  echo "lpdump,simg2img,img2simg), e2fsprogs, python3, openssl, git, libusb."
+  echo "Unknown package manager (Windows/macOS?). Install a container engine yourself:"
+  echo "  Docker Desktop  https://www.docker.com/products/docker-desktop"
+  echo "  or Podman Desktop  https://podman-desktop.io"
+  echo "Then install mtkclient (Python) and use scripts/docker-build.sh."
 fi
+# verify a container engine works (for the docker-build path)
+for e in docker podman; do have "$e" && "$e" info >/dev/null 2>&1 && { echo "container engine OK: $e"; break; }; done
 
 say "2) mtkclient (BROM tool)"
 if [ -x "$MTK_DIR/venv/bin/python" ]; then
