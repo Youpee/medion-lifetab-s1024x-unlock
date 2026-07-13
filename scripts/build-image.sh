@@ -35,13 +35,6 @@ for t in lpunpack lpmake lpdump simg2img debugfs e2fsck resize2fs dumpe2fs avbto
   command -v "$t" >/dev/null || die "missing tool '$t' (install android-tools/e2fsprogs/avbtool)"
 done
 [ -f "$BACKUP/super.bin" ] || die "no $BACKUP/super.bin — make a backup first (scripts/backup-stock.sh)"
-# auto-fetch KISS if it's the default and missing (also makes the Docker path self-contained)
-if [ "$LAUNCHER" = "launchers/KISS.apk" ] && [ ! -f "$LAUNCHER" ] && command -v curl >/dev/null 2>&1; then
-  echo "  launcher missing -> fetching KISS from F-Droid ..."
-  mkdir -p launchers
-  code=$(curl -fsSL https://f-droid.org/api/v1/packages/fr.neamar.kiss 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)["suggestedVersionCode"])' 2>/dev/null || true)
-  [ -n "$code" ] && curl -fSL -o "$LAUNCHER" "https://f-droid.org/repo/fr.neamar.kiss_${code}.apk" 2>/dev/null || true
-fi
 [ -f "$LAUNCHER" ] || die "launcher not found: $LAUNCHER — run scripts/setup.sh to fetch KISS, or pass an apk path"
 
 echo "[1/7] Extracting system/vendor/product from stock super"
