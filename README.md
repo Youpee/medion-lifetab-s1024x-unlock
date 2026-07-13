@@ -28,6 +28,15 @@ License: MIT.
 | BROM | unprotected (SBC/SLA/DAA=false) → mtkclient works |
 | Kiosk | `/system/priv-app/AldiTalkFilialApp` (the only HOME launcher in stock) |
 
+## Platform support
+- **Arch Linux — tested / first-class** (the single `android-tools` package gives avbtool +
+  lpmake/lpunpack/lpdump + simg2img, so `setup.sh` "just works").
+- **Other Linux (Debian/Ubuntu/Fedora)** — `setup.sh` installs what the repos have and warns
+  about anything missing (`lpmake`/`avbtool` aren't always packaged there yet).
+- **Windows / macOS** — not supported by the shell scripts directly. Planned: a Docker image
+  so the offline image **build** runs on any OS. The USB steps (backup/flash via mtkclient)
+  still need native USB — on Windows use WSL2 + `usbipd-win`, or run mtkclient natively.
+
 ## Requirements
 - **~15 GB free disk space** on the PC — the stock `super` backup alone is 4 GB, and the
   build needs working space plus a 4 GB output image. Don't build in `/tmp` (it's RAM/tmpfs).
