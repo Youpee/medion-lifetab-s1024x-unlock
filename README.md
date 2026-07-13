@@ -109,6 +109,10 @@ scripts/flash.sh super_unkiosk.img vbmeta_disable.img
 # 4) when the flash finishes: unplug and power the tablet on — that's it.
 #    Your launcher comes up instead of the Aldi kiosk.
 #    (the very first boot after a data wipe may take a couple of minutes — normal)
+
+# 5) (optional) once it works, free disk space — removes the ~4 GB build output
+#    and .work, but KEEPS your stock backup (your only way back to stock):
+scripts/clean.sh
 ```
 
 Revert anytime:
