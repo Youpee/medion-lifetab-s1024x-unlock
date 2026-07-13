@@ -16,7 +16,9 @@ echo ">>> BROM: hold Vol- + plug USB. Flashing super (super write takes ~12-14 m
 sudo ./venv/bin/python mtk.py w super  "$SUPER"
 sudo ./venv/bin/python mtk.py w vbmeta "$VBM"
 sudo ./venv/bin/python mtk.py e userdata,metadata,md_udc,cache
-sudo ./venv/bin/python mtk.py reset
+echo ">>> The reset below usually prints 'DeviceClass - [Errno 2] Entity not found'"
+echo "    right before 'Reset command was sent' — THAT IS NORMAL, don't panic."
+sudo ./venv/bin/python mtk.py reset || true
 echo "DONE. Unplug and power the tablet on — your launcher will come up."
 echo "      (first boot after the data wipe may take a couple of minutes)"
 echo

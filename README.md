@@ -149,6 +149,10 @@ scripts/restore-stock.sh    # restores the factory Aldi ROM
   Magisk. For most people, "kiosk gone + a launcher + sideload apps" is already enough.
 
 ## Known gotchas
+- **Don't panic at the `reset` "error".** When the device powers off after flashing,
+  mtkclient almost always prints `DeviceClass - [Errno 2] Entity not found` right before
+  `Reset command was sent`. That is **normal** — the tablet just disconnected. If the write
+  hit 100%, you're fine: unplug and boot.
 - **`user` build + enforcing SELinux**: on the stripped-down Medion build, the notification
   shade / recents and the "Developer options" menu may not work / may crash. This needs
   root (Magisk) or a permissive policy to fully fix — see `docs/FIX_PLAN.md` if included.
