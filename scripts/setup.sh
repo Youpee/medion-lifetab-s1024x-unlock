@@ -14,18 +14,19 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
 say(){ printf '\n=== %s ===\n' "$*"; }
 have(){ command -v "$1" >/dev/null 2>&1; }
+G=$'\033[1;32m'; R=$'\033[1;31m'; N=$'\033[0m'   # terminal highlighting (renders through tee too)
 
 say "1) Base tools + container engine (podman)"
 # The build tools (avbtool/lpmake/e2fsprogs) run INSIDE the container (scripts/docker-build.sh),
 # so the host only needs: git/python/openssl/curl/libusb + a container engine + mtkclient.
 # (android-tools/e2fsprogs are also installed on Arch so the native scripts/build-image.sh works too.)
 if have pacman; then
-  sudo pacman -S --needed --noconfirm git python openssl curl libusb podman android-tools e2fsprogs
+  sudo pacman -S --needed --noconfirm git python openssl curl libusb podman android-tools e2fsprogs unzip
 elif have apt; then
   sudo apt update
-  sudo apt install -y git python3 python3-venv python3-pip openssl curl libusb-1.0-0 podman
+  sudo apt install -y git python3 python3-venv python3-pip openssl curl libusb-1.0-0 podman unzip
 elif have dnf; then
-  sudo dnf install -y git python3 openssl curl libusbx podman
+  sudo dnf install -y git python3 openssl curl libusbx podman unzip
 else
   echo "Unknown package manager (Windows/macOS?). Install a container engine yourself:"
   echo "  Docker Desktop  https://www.docker.com/products/docker-desktop"
@@ -85,5 +86,5 @@ for t in avbtool lpmake lpunpack lpdump simg2img debugfs resize2fs python3 opens
 done
 [ -x "$MTK_DIR/venv/bin/python" ] && echo "  ok  mtkclient ($MTK_DIR)" || { echo "  MISSING  mtkclient"; MISS=1; }
 echo
-[ "$MISS" = 0 ] && echo "All set. Next: scripts/backup-stock.sh" \
-                || echo "Some tools are missing — install them, then re-run."
+[ "$MISS" = 0 ] && printf '%sAll set. Next: scripts/backup-stock.sh%s\n' "$G" "$N" \
+                || printf '%sSome tools are missing — install them, then re-run.%s\n' "$R" "$N"

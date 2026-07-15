@@ -1,67 +1,145 @@
-# Using the tablet as a wireless second monitor (KDE Plasma Wayland + AMD)
+# Using the tablet as a wireless second monitor (Linux + Sunshine + Moonlight)
 
-After unlocking (KISS launcher, ADB on), you can use the tablet as a low-latency wireless
-**second monitor** for a Linux PC via **Sunshine** (host) + **Moonlight** (tablet client).
-This doc captures what actually works on **KDE Plasma 6 Wayland + AMD (VAAPI)** — it was
-non-obvious.
+Turn the tablet into a low-latency wireless **second monitor** for a Linux PC:
+**Sunshine** (host, on the PC) streams a screen, **Moonlight** (client, on the tablet) shows it.
 
-## Client (tablet)
-Install **Moonlight** (`com.limelight`) — official APK works fine as a normal app:
-https://github.com/moonlight-stream/moonlight-android/releases (`app-nonRoot-release.apk`).
-(If installed as a `/system/app` it may crash on native libs — install it as a user app.)
+Worked out on **KDE Plasma 6 Wayland + AMD**, but the tricky part — making a *virtual* second
+screen that Sunshine can capture — is written to work on **any laptop**, not just one specific
+machine. The connector name is auto-detected, so nothing here is hardcoded to a single PC.
 
-## Host (PC): Sunshine
-`sunshine` (AUR/repo). This build's capture methods are only `kms`, `wlr`, `x11`:
-- `wlr` (zwlr_screencopy) does **not** work on KWin (KDE doesn't implement it).
-- **`kms` works** and encodes with `h264_vaapi` on AMD — use `capture = kms`.
-- `krfb-virtualmonitor` creates a KWin virtual output, **but `kms` can't see it** (it's
-  KWin-internal, not a real DRM output), and this Sunshine has no `kwin`/portal capture.
-  → krfb path is a dead end here.
+---
 
-## The virtual monitor: force a spare DRM connector (this is the trick)
-`kms` only captures **real DRM outputs**. Laptops usually have a spare disconnected
-connector (here `HDMI-A-1`). Force it on with a custom EDID → a real 1920x1200 output that
-`kms` captures, positioned as an **extended** second screen:
-
+## TL;DR (the whole thing)
 ```bash
-# 1) generate a 1920x1200 EDID
-python3 extras/make-edid.py /tmp/vm.edid          # or ~/.local/share/medion-vm.edid
+# ON THE PC
+python3 extras/make-edid.py ~/.local/share/medion-vm.edid   # one-time: fake 1920x1200 EDID
+extras/vmon.sh on                                           # create the virtual monitor
+sunshine                                                    # start the host
+# ON THE TABLET: open Moonlight, add the PC, pick the "Desktop" app, enter the PIN in the web UI
+extras/vmon.sh off                                          # when done (lets the laptop sleep)
+```
+The rest of this doc explains each piece and how to fix it when a step doesn't work.
 
-# 2) inject it and force the connector on (root)
-sudo sh -c 'p=$(ls -d /sys/kernel/debug/dri/*/HDMI-A-1); cp /tmp/vm.edid "$p/edid_override"; \
-            echo on > /sys/class/drm/card1-HDMI-A-1/status'
+> Run it as a **normal user, not with `sudo`** — the script calls `sudo` itself only for the
+> DRM sysfs parts; the rest needs your live session. If you get `permission denied`, the exec
+> bit is missing — either `chmod +x extras/vmon.sh` (then `./extras/vmon.sh on`) or just run
+> `sh extras/vmon.sh on`.
 
-# 3) KWin now sees HDMI-A-1 @ 1920x1200 (extended). Point Sunshine at it:
-#    sunshine.conf:  capture = kms   +   output_name = <index of HDMI-A-1 in the KMS list>
-#    (find the index in Sunshine's log: "Monitor N is HDMI-A-1"), then restart sunshine.
+---
+
+## 1. Client (tablet): Moonlight
+Install **Moonlight** (`com.limelight`) as a **normal user app**:
+https://github.com/moonlight-stream/moonlight-android/releases (`app-nonRoot-release.apk`).
+(Installed as a `/system/app` it may crash on native libs — keep it a user app.)
+
+## 2. Host (PC): Sunshine
+Install `sunshine` (AUR/repo). The encoder is auto-picked from your GPU — you usually don't
+set it by hand:
+- **AMD** → `h264_vaapi` (VAAPI)   • **Intel** → `qsv`/VAAPI   • **Nvidia** → `nvenc`.
+- Not sure what you have: `lspci | grep -Ei 'vga|3d|display'`.
+
+First run: set web-UI creds, then open the UI:
+```bash
+sunshine --creds <user> <pass>      # once
+sunshine                            # start it
+xdg-open https://localhost:47990    # web UI (self-signed cert warning is expected)
+```
+Open the firewall for the stream: **tcp 47984/47989/47990/48010** + **udp 47998-48000**.
+
+## 3. The virtual monitor (the actual trick)
+Sunshine's reliable Wayland capture is `kms`, and `kms` can only capture **real DRM outputs**.
+KWin virtual outputs (`krfb-virtualmonitor`) are invisible to it — dead end. What *does* work
+on every laptop: most have a **spare, disconnected** video connector (HDMI/DP). Force it "on"
+with a fake EDID and it becomes a real 1920x1200 output that `kms` captures — used as an
+extended second screen.
+
+`extras/vmon.sh on|off` does this and **auto-detects the spare connector**, so it's portable:
+```bash
+python3 extras/make-edid.py ~/.local/share/medion-vm.edid   # one-time
+extras/vmon.sh on     # picks a disconnected HDMI/DP connector, forces it on, extends the desktop
+extras/vmon.sh off    # disables it again
+```
+> ⚠️ This runs against your **live** desktop session (enables/positions outputs). If you're
+> handing commands to someone else, warn them: a flurry of display changes can shuffle windows.
+
+If auto-detect picks wrong, override the connector explicitly:
+```bash
+CONN=card0-DP-2 extras/vmon.sh on
 ```
 
-Convenience toggle: **`extras/vmon.sh on|off`** does inject+enable / disable+off.
-(It's runtime — cleared on reboot; re-run `vmon on` to bring it back.)
-
-## Sunshine config (`~/.config/sunshine/sunshine.conf`)
+## 4. Point Sunshine at the virtual monitor
+`kms` capture selects the screen by **index**, and the index differs per machine. Find it in
+Sunshine's own log — it prints a line per output when it starts:
+```
+Detecting monitor 0 ... eDP-1
+Detecting monitor 1 ... HDMI-A-1     <- this index is your output_name
+```
+Then set `~/.config/sunshine/sunshine.conf`:
 ```
 capture = kms
-output_name = 0          # index of the virtual monitor from the KMS monitor list
-stream_audio = disabled  # optional
+output_name = 1
+stream_audio = disabled
 ```
-First run: set web-UI creds with `sunshine --creds <user> <pass>`, open
-`https://localhost:47990`, pair Moonlight (Moonlight shows a PIN → enter it there).
-Open the firewall for the stream: ports 47984/47989/47990/48010 (tcp) + 47998-48000 (udp).
+> ⚠️ **No trailing spaces or inline `# comments` on these lines.** Sunshine does *not* strip
+> them, so `output_name = 0   ` is read literally as `"0   "`, matches no monitor, and you get
+> `Couldn't find monitor [<garbage>]` → `Video failed to find working encoder`. If unsure, write
+> the file clean in one shot:
+> ```bash
+> printf 'capture = kms\noutput_name = 0\nstream_audio = disabled\n' > ~/.config/sunshine/sunshine.conf
+> ```
+> (`output_name` is the index of YOUR virtual output from the log — not always 0/1.)
 
-## Caveats (KDE multi-monitor quirks — not blockers, but annoying)
-- **Windows may open/migrate to the virtual screen.** KDE places new windows on the
-  "active" screen. `kwriteconfig6 --file kwinrc --group Windows --key ActiveMouseScreen false`
-  helps; also force the laptop as primary (`kscreen-doctor output.eDP-1.priority.1`). For
-  precise control use KWin Window Rules, or just drag windows over manually.
-- **Lid close won't suspend** while the virtual monitor is on (system sees an "external
-  monitor"). Run `vmon off` before closing the lid, or set KDE/logind to suspend anyway.
-- **Direct/absolute touch is offset** with two monitors (Moonlight maps input to the whole
-  desktop, plus fractional scale). Reliable options: use Moonlight **trackpad mode**
-  (relative), or make the tablet the **only** display for 1:1 absolute touch.
-- Match Moonlight's resolution to the virtual monitor (e.g. 1920x1200) to avoid stretch.
+Restart Sunshine after editing. (On an **X11** session it's simpler: `capture = x11` and
+`output_name` is the X screen — no EDID hack needed, `xrandr` can add the mode directly.)
 
-## Why not simpler tools
-KDE Wayland has no `wlr-screencopy`; portal/PipeWire capture wasn't in this Sunshine build;
-`krfb-virtualmonitor` outputs aren't visible to `kms`. Forcing a real DRM connector is the
-most robust path that works with the capture Sunshine actually has.
+---
+
+## Troubleshooting (this is where the friend's setup broke)
+**"I ran the script but Sunshine doesn't see the new monitor."** — Almost always the wrong
+connector or the wrong Sunshine index. Check, in order:
+
+1. **List your connectors** — the spare one is `disconnected` (not `eDP` = your laptop panel):
+   ```bash
+   for c in /sys/class/drm/card*-*/status; do printf '%s = %s\n' "$(basename "${c%/status}")" "$(cat "$c")"; done
+   ```
+   `vmon.sh on` prints which one it chose (`connector cardX-... -> output ...`). If that's not a
+   real spare port, pass `CONN=<name>` yourself.
+2. **Did the output actually come up?** After `vmon.sh on`:
+   ```bash
+   kscreen-doctor -o | grep -A1 -Ei 'hdmi|dp-'   # should show the forced output "enabled"
+   ```
+   If not, the connector name for the EDID node was wrong (needs debugfs mounted + root).
+3. **Sunshine index mismatch.** Re-read the Sunshine log and set `output_name` to the index it
+   reports for your virtual output. This is the #1 cause of "capture is black / wrong screen".
+4. **Nvidia proprietary + kms** can refuse to capture; try `nvidia_drm.modeset=1` on the kernel
+   cmdline, or fall back to an X11 session with `capture = x11`.
+
+**"Video failed to find working encoder" / `Couldn't find monitor [<garbage>]`.** Sunshine
+found the monitor list but can't grab a screen. In practice, two causes, check both:
+- **Config whitespace (most common!).** A trailing space or `# comment` after `output_name`
+  makes Sunshine search for a monitor named `"0   "` and fail — the log shows a *changing*
+  garbage number like `Couldn't find monitor [-2090125424]`. Rewrite the config clean:
+  ```bash
+  printf 'capture = kms\noutput_name = 0\nstream_audio = disabled\n' > ~/.config/sunshine/sunshine.conf
+  ```
+  When it's right, `config: 'output_name' = 0` appears in the log and the number becomes `[0]`.
+- **No hardware encoder.** Sunshine needs a working GPU encoder — Vulkan (`vulkan-radeon`/
+  `vulkan-intel`, usually already installed with Mesa) or VAAPI (`libva-mesa-driver`
+  `libva-utils`, verify with `vainfo` showing `VAEntrypointEncSlice`). Sunshine auto-picks
+  whichever works (`h264_vulkan`, `h264_vaapi`, …).
+
+## Caveats (multi-monitor quirks — annoying, not blockers)
+- **New windows jump to the virtual screen.** `kwriteconfig6 --file kwinrc --group Windows --key
+  ActiveMouseScreen false` helps; the script already forces the laptop panel as primary.
+- **Lid close won't suspend** while the virtual monitor is on (looks like an external monitor).
+  Run `vmon.sh off` before closing the lid.
+- **Absolute touch is offset** with two screens. Use Moonlight **trackpad mode** (relative), or
+  make the tablet the **only** display for 1:1 touch.
+- **Match Moonlight's resolution** to the virtual monitor (1920x1200) to avoid stretch.
+
+## Not-KDE / other desktops
+`vmon.sh` uses `kscreen-doctor` (KDE) to enable+position the forced output. On GNOME/other
+Wayland desktops, do steps 3–4 the same way but **enable and position the new output in your
+Display Settings GUI** instead of `kscreen-doctor` (the EDID/DRM force and the Sunshine
+`output_name` part are identical). On **X11**, skip the EDID hack entirely: `capture = x11`
+plus `xrandr --newmode/--addmode` on a spare output.

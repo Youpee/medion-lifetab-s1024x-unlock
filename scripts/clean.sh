@@ -14,7 +14,10 @@ rm_if(){ if [ -e "$1" ]; then sz=$(du -sm "$1" 2>/dev/null | cut -f1); freed=$((
 
 echo "Cleaning regenerable build artifacts in $REPO ..."
 rm_if .work
+rm_if .work-magisk               # Magisk apk cache + patch workspace (re-downloads on rebuild)
 rm_if super_unkiosk.img          # rebuild anytime with scripts/build-image.sh
+rm_if boot_magisk.img            # rebuild with scripts/build-magisk-boot.sh
+rm_if medion-fixup.zip           # rebuild with scripts/build-fixup-module.sh
 rm_if test_super.img
 rm_if test_vbmeta.img
 
@@ -23,6 +26,7 @@ if [ "$ALL" = 1 ]; then
   echo "--all: removing things setup.sh installed ..."
   rm_if vbmeta_disable.img
   rm_if launchers                # downloaded launcher APK(s)
+  rm_if apps                     # downloaded open-source app suite (fetch-apps.sh re-downloads)
   # container toolchain image (try both engines)
   for ce in docker podman; do
     command -v "$ce" >/dev/null 2>&1 && "$ce" rmi -f medion-unkiosk >/dev/null 2>&1 \
