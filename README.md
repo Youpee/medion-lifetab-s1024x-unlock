@@ -14,6 +14,22 @@ reversible (full backup + restore included).
 
 ---
 
+## 👉 Pick your version (three branches)
+
+| Branch | Best for | What you get |
+|---|---|---|
+| **`main`** (you are here) | **Arch / Linux**, no root | Remove the Aldi kiosk + install your own launcher. Native, simplest. |
+| **[`docker`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/docker)** | **Windows / macOS / any Linux**, no root | Same result, but the offline build runs in a **container**, so it works on any OS. |
+| **[`root`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)** | want a **fully usable system** | Everything above **+ ROOT (Magisk)** — which fixes what the stripped Medion build leaves broken. |
+
+> **Heads-up:** on the plain no-root build (`main` / `docker`), the stock Medion **`user`**
+> image is half-broken — **ADB won't come up, Developer options crash Settings, the
+> notification shade and recents don't work.** If you want those actually fixed (working ADB as
+> root, Developer options, provisioning, a shade workaround — installed automatically), use the
+> **[`root` branch](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root).**
+
+---
+
 ## ⚠️ Disclaimer
 Unlocking the bootloader and flashing is **at your own risk**: you may void the warranty
 and, on mistakes, brick the device (recoverable while your backup + BROM are intact). This
@@ -69,7 +85,13 @@ Enter it like this:
 1. **Start the mtkclient command FIRST** — it sits waiting for the device.
 2. Make sure the tablet is off / not running (a device that isn't booted drops into BROM on
    connect). If it's stuck in a loop, unplug it so it disappears from `lsusb` first.
-3. **Hold Volume Down (−)** and plug in USB. mtkclient catches BROM in ~1-2 seconds.
+3. **Press and hold the VOLUME-DOWN button** (the lower-volume side, **not** Power) and, keeping
+   it held, plug in USB. mtkclient catches BROM in ~1-2 seconds. (Let go once it connects.)
+
+> **The buttons on the tablet are NOT labelled.** Holding it with the camera at the top-right
+> (as in the photo), **VOLUME-DOWN is the button on the LEFT** (`Vol−`):
+>
+> ![Which button is Volume-Down](docs/volume-buttons.jpg)
 
 Notes:
 - No timing ritual — you do **not** need to "wait N minutes" or hold Power for X seconds.
