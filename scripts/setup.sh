@@ -85,5 +85,5 @@ for t in avbtool lpmake lpunpack lpdump simg2img debugfs resize2fs python3 opens
 done
 [ -x "$MTK_DIR/venv/bin/python" ] && echo "  ok  mtkclient ($MTK_DIR)" || { echo "  MISSING  mtkclient"; MISS=1; }
 echo
-[ "$MISS" = 0 ] && echo "All set. Next: scripts/backup-stock.sh" \
-                || echo "Some tools are missing — install them, then re-run."
+[ "$MISS" = 0 ] && printf '\033[1;32mAll set. Next: scripts/backup-stock.sh\033[0m\n' \
+                || printf '\033[1;31mSome tools are missing — install them, then re-run.\033[0m\n'

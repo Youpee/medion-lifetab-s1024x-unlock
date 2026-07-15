@@ -30,7 +30,7 @@ SUPER_SIZE=4294967296                   # this device's super geometry (constant
 GROUP_MAX=4292870144
 W=".work"; mkdir -p "$W"
 
-die(){ echo "ERROR: $*" >&2; exit 1; }
+die(){ printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 for t in lpunpack lpmake lpdump simg2img debugfs e2fsck resize2fs dumpe2fs avbtool python3 openssl; do
   command -v "$t" >/dev/null || die "missing tool '$t' (install android-tools/e2fsprogs/avbtool)"
 done
@@ -126,5 +126,5 @@ GOT=$(stat -c %s "$OUT")
 [ "$GOT" = "$SUPER_SIZE" ] && echo "  OK size $OUT = $GOT" || die "size $GOT != $SUPER_SIZE"
 lpdump "$OUT" | grep -qE "Name: system" && echo "  OK lpdump readable"
 echo
-echo "DONE: $OUT"
+printf '\033[1;32mDONE: %s\033[0m\n' "$OUT"
 echo "Next: scripts/make-vbmeta-disable.sh   (then: scripts/flash.sh $OUT vbmeta_disable.img)"

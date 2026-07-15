@@ -43,5 +43,5 @@ case "$(basename "$CE")" in docker) UFLAG=(-u "$(id -u):$(id -g)");; esac
   "$IMG" bash -c "BACKUP=/backup ./scripts/build-image.sh $* && ./scripts/make-vbmeta-disable.sh"
 
 echo
-echo "Done -> super_unkiosk.img + vbmeta_disable.img in $PWD"
+printf '\033[1;32mDone -> super_unkiosk.img + vbmeta_disable.img in %s\033[0m\n' "$PWD"
 echo "Next: flash with NATIVE mtkclient:  scripts/flash.sh super_unkiosk.img vbmeta_disable.img"
