@@ -47,6 +47,7 @@ PIN_MATERIAL_FILES=39                     # me.zhanghai.android.files   1.7.4
 PIN_HELIBOARD=4005                        # helium314.keyboard          4.0
 PIN_CROMITE_TAG="v148.0.7778.168-cb3baf14f52eb4365d017f640f85310735c19b79"
 PIN_CROMITE_ASSET="arm64_ChromePublic.apk"
+PIN_TASKMANAGER_TAG="v1.3.4"; PIN_TASKMANAGER_ASSET="taskmanager-v1.3.4.apk"  # RohitKushvaha01 (root/Shizuku)
 PIN_MICROG_TAG="v0.3.15.250932"           # microg/GmsCore
 PIN_GMS_ASSET="com.google.android.gms-250932030.apk"
 PIN_VENDING_ASSET="com.android.vending-84022630.apk"
@@ -113,6 +114,7 @@ get_fdroid org.fossify.camera             system/FossifyCamera  "$PIN_FOSSIFY_CA
 get_fdroid org.fossify.gallery            system/FossifyGallery "$PIN_FOSSIFY_GALLERY"
 get_fdroid me.zhanghai.android.files      system/MaterialFiles  "$PIN_MATERIAL_FILES"
 get_fdroid helium314.keyboard             system/HeliBoard      "$PIN_HELIBOARD"
+get_github RohitKushvaha01/TaskManager '^taskmanager-.*\.apk$' system/TaskManager apk "$PIN_TASKMANAGER_TAG" "$PIN_TASKMANAGER_ASSET"
 
 echo
 echo "${B}== microG chain (root branch only — needs signature spoofing) ==${N}"

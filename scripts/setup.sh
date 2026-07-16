@@ -61,22 +61,22 @@ else
   echo "Could not find mtkclient udev rules — flashing may need sudo (that's fine)."
 fi
 
-say "4) Launcher (KISS from F-Droid)"
+say "4) Launcher (Neo-Launcher from GitHub)"
 mkdir -p "$REPO/launchers"
-if [ -f "$REPO/launchers/KISS.apk" ]; then
-  echo "launchers/KISS.apk already present — skipping."
+if [ -f "$REPO/launchers/NeoLauncher.apk" ]; then
+  echo "launchers/NeoLauncher.apk already present — skipping."
 elif have curl && have python3; then
-  code=$(curl -fsSL https://f-droid.org/api/v1/packages/fr.neamar.kiss 2>/dev/null \
-         | python3 -c 'import sys,json;print(json.load(sys.stdin)["suggestedVersionCode"])' 2>/dev/null || true)
-  if [ -n "$code" ] && curl -fSL -o "$REPO/launchers/KISS.apk" "https://f-droid.org/repo/fr.neamar.kiss_${code}.apk"; then
-    echo "downloaded launchers/KISS.apk (fr.neamar.kiss build $code)"
+  url=$(curl -fsSL https://api.github.com/repos/NeoApplications/Neo-Launcher/releases/latest 2>/dev/null \
+        | python3 -c 'import sys,json;print(next(a["browser_download_url"] for a in json.load(sys.stdin)["assets"] if a["name"].replace(".","").lower().endswith("releaseapk")))' 2>/dev/null || true)
+  if [ -n "$url" ] && curl -fSL -o "$REPO/launchers/NeoLauncher.apk" "$url"; then
+    echo "downloaded launchers/NeoLauncher.apk"
   else
-    echo "couldn't fetch KISS automatically — download it manually to launchers/KISS.apk:"
-    echo "  https://f-droid.org/packages/fr.neamar.kiss/"
+    echo "couldn't fetch Neo-Launcher automatically — download it manually to launchers/NeoLauncher.apk:"
+    echo "  https://github.com/NeoApplications/Neo-Launcher/releases"
   fi
 else
-  echo "curl/python3 missing — download KISS manually to launchers/KISS.apk:"
-  echo "  https://f-droid.org/packages/fr.neamar.kiss/"
+  echo "curl/python3 missing — download Neo-Launcher manually to launchers/NeoLauncher.apk:"
+  echo "  https://github.com/NeoApplications/Neo-Launcher/releases"
 fi
 
 say "5) Check"

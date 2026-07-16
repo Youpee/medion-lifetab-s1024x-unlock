@@ -1,6 +1,8 @@
 # build workspace
 .work/
 .work-magisk/
+.work-build.log
+*.log
 medion-fixup.zip
 
 # never commit firmware / backups / built images (proprietary + huge)

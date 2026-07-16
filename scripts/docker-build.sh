@@ -6,7 +6,7 @@
 # (backup / unlock / flash) still use NATIVE mtkclient — Docker can't reliably do USB on Win/macOS.
 #
 # Usage (from repo root):  scripts/docker-build.sh [LAUNCHER.apk] [extra.apk ...]
-#   (paths must be inside the repo, e.g. launchers/KISS.apk; no args -> launchers/KISS.apk)
+#   (paths must be inside the repo, e.g. launchers/NeoLauncher.apk; no args -> launchers/NeoLauncher.apk)
 # Env: BACKUP=/path/to/backup_nv (default ~/mtkclient/backup_nv)
 set -euo pipefail
 cd "$(dirname "$0")/.."

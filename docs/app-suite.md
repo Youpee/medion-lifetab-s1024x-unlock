@@ -9,6 +9,20 @@ Android 10). It is deliberately detailed — it doubles as the design rationale 
 > two app stores, camera, gallery, files, an offline keyboard, and (root branch) a working **microG**
 > with real signature spoofing — with **no Google apps, no trackers, and no manual setup taps.**
 
+### Screenshots
+
+<p float="left">
+  <img src="screenshots/01-home.png"            width="200" alt="Neo-Launcher home screen">
+  <img src="screenshots/02-app-drawer.png"      width="200" alt="App drawer — the open-source suite (Cromite, F-Droid, Aurora, Fossify, HeliBoard, Material Files, TaskManager, microG, Magisk)">
+  <img src="screenshots/03-microg.png"          width="200" alt="microG Settings in the default dark theme">
+  <img src="screenshots/04-microg-selfcheck.png" width="200" alt="microG Self-Check: 'System spoofs signature' checked — spoofing is live">
+  <img src="screenshots/05-magisk.png"          width="200" alt="Magisk 30.7 home: Zygisk = Yes, Ramdisk = Yes, no stub/setup nag">
+</p>
+
+*Left to right: Neo-Launcher home · the full open-source app drawer · microG settings (dark theme) ·
+microG Self-Check with **"System spoofs signature"** ticked · Magisk with Zygisk active. All of this
+comes up on its own after one flash — no manual taps.*
+
 ---
 
 ## 1. Design principles
@@ -301,22 +315,51 @@ Signature spoofing support
 So the module is seeded with scope **`system` + `android` + `com.google.android.gms`** (`system` is the
 one that matters here; the others are kept for parity/robustness).
 
-### 7.5 Automating it — the seed DB + one-shot reboot
+### 7.5 Automating it — the seed DB + **two** auto-reboots
 
 We can't run SQL on the device (no `sqlite3` binary there), and we can't rely on the broken shade to
 reach the manager. So `build-image.sh` **generates the finished `modules_config.db` at build time** with
 the host's `sqlite3` (from the schema above, FakeGApps enabled and scoped), and stages it as
-`/system/etc/medion/lspd-seed.db`. On the boot after LSPosed first creates its own DB, the boot service:
+`/system/etc/medion/lspd-seed.db`. The boot service then walks a small state machine.
+
+**Why two reboots are unavoidable.** There's a hard ordering dependency baked into how Magisk/Zygisk/
+LSPosed load, and it can't be collapsed into a single boot:
+
+- **Zygisk only goes live after a reboot.** On the *very first* boot the service turns Zygisk on in
+  Magisk's settings DB (`REPLACE INTO settings (key,value) VALUES('zygisk',1)`), but zygote has already
+  started *without* the Zygisk hook for this boot. Zygisk only injects into zygote when zygote starts
+  *fresh with the setting already on* — i.e. next boot.
+- **LSPosed can't create its config DB until Zygisk is live.** LSPosed is a Zygisk module; with Zygisk
+  inactive it never runs, so `/data/adb/lspd/config/modules_config.db` doesn't exist yet — which means
+  there's nothing for the seed to overwrite.
+- **So the seed has to wait for a boot where Zygisk is live and LSPosed has produced its DB.** That's a
+  *different* boot from the one where we first enabled Zygisk.
+
+This is a chicken-and-egg: the reboot that *activates* Zygisk is a precondition for the DB that the seed
+reboot needs. Early builds had only the seed reboot and **deadlocked on a clean flash** — Zygisk got
+enabled but nothing ever rebooted to activate it, so LSPosed never ran, the seed condition never became
+true, and the user had to reboot by hand (silent, easy-to-miss failure). The fix is to make *both*
+reboots automatic. On a fresh install the service therefore fires them in order:
+
+**Reboot 1 — activate Zygisk.** After enabling Zygisk + installing the LSPosed module, the service checks
+whether Zygisk is actually injected into zygote (`grep zygisk /proc/<zygote64-pid>/maps`). If it isn't, it
+`touch`es `/data/adb/medion-zygisk-activated` and triggers a controlled reboot (`setprop sys.powerctl
+reboot`). The marker guarantees this happens once.
+
+**Reboot 2 — load the spoofing seed.** On the next boot Zygisk is live, LSPosed runs and creates its own
+`modules_config.db`. Now the service:
 
 1. copies the seed over `modules_config.db` (and removes the stale `-wal`/`-shm`),
 2. fixes owner/mode/SELinux label,
-3. drops a marker in `/data/adb`, and
-4. triggers **one** controlled reboot (`setprop sys.powerctl reboot`), guarded by the marker so it never
-   loops.
+3. drops `/data/adb/medion-lspd-seeded`, and
+4. triggers the second controlled reboot, guarded by that marker.
 
-After that reboot LSPosed loads FakeGApps into `system_server` and spoofing is live — **no manual LSPosed
-taps, ever.** (Without host `sqlite3` the build skips the seed and this becomes a documented manual step
-instead.)
+After reboot 2, LSPosed loads FakeGApps into `system_server` and spoofing is live — **no manual LSPosed
+taps, ever.** Both markers live in `/data/adb` (wiped on reflash, so the whole dance re-runs cleanly on a
+fresh install and **never** on later normal boots — there is no third reboot and no loop). End users see:
+first boot → lands on Neo → reboots itself → reboots itself again → done. `scripts/verify.sh` confirms
+*"signature spoofing active (system_server)"*. (Without host `sqlite3` the build skips the seed and this
+becomes a documented manual LSPosed step instead.)
 
 ---
 

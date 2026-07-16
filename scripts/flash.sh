@@ -46,12 +46,12 @@ printf '%s============================================================%s\n' "$G"
 if [ -n "$BOOT" ]; then
   printf '  First boot after a wipe takes ~2-3 min. Root, adb, the SELinux\n'
   printf '  permissive fix and the full Magisk app all install themselves.\n\n'
-  printf '%s  ####################################################%s\n' "$R" "$N"
-  printf '%s  #  FIRST BOOT: if the launcher HANGS / "not responding"  #%s\n' "$R$B" "$N"
-  printf '%s  #  -> just REBOOT the tablet ONCE. Then it is permanent. #%s\n' "$R$B" "$N"
-  printf '%s  ####################################################%s\n' "$R" "$N"
-  printf '  (KISS checks root via su on its first launch; the boot service\n'
-  printf '   settles that a moment later, so a single reboot fixes it.)\n\n'
+  printf '%s  >>> FIRST SETUP IS FULLY HANDS-OFF <<<%s\n' "$Y$B" "$N"
+  printf '%s  The tablet REBOOTS ITSELF TWICE, on its own — this is normal:%s\n' "$Y" "$N"
+  printf '%s     1) once to switch Zygisk ON (it only goes live after a reboot), then%s\n' "$Y" "$N"
+  printf '%s     2) once more to load microG'\''s signature-spoofing config (LSPosed).%s\n' "$Y" "$N"
+  printf '%s  Then it lands on Neo-Launcher. Do NOT touch it — give it ~5 min to settle.%s\n' "$Y" "$N"
+  printf '  When it lands on the launcher, run %sscripts/verify.sh%s to confirm.\n' "$C" "$N"
   printf '  Then (optional): %sscripts/clean.sh%s   # free disk space\n' "$C" "$N"
 else
   printf '  Your launcher comes up (no more Aldi kiosk).\n'

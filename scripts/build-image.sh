@@ -10,7 +10,7 @@
 #
 # Run from the repo root. Usage:
 #   ./scripts/build-image.sh [LAUNCHER.apk] [extra1.apk extra2.apk ...]
-#   (no args -> uses launchers/KISS.apk downloaded by scripts/setup.sh)
+#   (no args -> uses launchers/NeoLauncher.apk downloaded by scripts/setup.sh)
 #
 # Environment (optional):
 #   BACKUP  — stock backup folder (default ~/mtkclient/backup_nv), must contain super.bin
@@ -18,8 +18,8 @@
 #   GROW_MB — how many MB to grow /system for the APKs (default 64)
 set -euo pipefail
 
-# launcher: 1st arg, or default to launchers/KISS.apk (fetched by scripts/setup.sh)
-LAUNCHER="${1:-launchers/KISS.apk}"
+# launcher: 1st arg, or default to launchers/NeoLauncher.apk (fetched by scripts/setup.sh)
+LAUNCHER="${1:-launchers/NeoLauncher.apk}"
 [ $# -gt 0 ] && shift
 EXTRA_APKS=("$@")
 BACKUP="${BACKUP:-${MTK:-$HOME/mtkclient}/backup_nv}"
@@ -68,19 +68,19 @@ emit_libs(){ # $1=apk  $2=/system/(priv-)app/Name   (appends debugfs cmds; uses 
   echo "    + extracted $n native lib(s) -> $base/lib/arm64"
 }
 [ -f "$BACKUP/super.bin" ] || die "no $BACKUP/super.bin — make a backup first (scripts/backup-stock.sh)"
-# auto-fetch KISS if it's the default and missing (also makes the Docker path self-contained)
-if [ "$LAUNCHER" = "launchers/KISS.apk" ] && [ ! -f "$LAUNCHER" ] && command -v curl >/dev/null 2>&1; then
-  echo "  launcher missing -> fetching KISS from F-Droid ..."
+# auto-fetch Neo-Launcher if it's the default and missing (also makes the Docker path self-contained)
+if [ "$LAUNCHER" = "launchers/NeoLauncher.apk" ] && [ ! -f "$LAUNCHER" ] && command -v curl >/dev/null 2>&1; then
+  echo "  launcher missing -> fetching Neo-Launcher from GitHub ..."
   mkdir -p launchers
-  code=$(curl -fsSL https://f-droid.org/api/v1/packages/fr.neamar.kiss 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)["suggestedVersionCode"])' 2>/dev/null || true)
-  [ -n "$code" ] && curl -fSL -o "$LAUNCHER" "https://f-droid.org/repo/fr.neamar.kiss_${code}.apk" 2>/dev/null || true
+  url=$(curl -fsSL "https://api.github.com/repos/NeoApplications/Neo-Launcher/releases/latest" 2>/dev/null | python3 -c 'import sys,json;print(next(a["browser_download_url"] for a in json.load(sys.stdin)["assets"] if a["name"].replace(".","").lower().endswith("releaseapk")))' 2>/dev/null || true)
+  [ -n "$url" ] && curl -fSL -o "$LAUNCHER" "$url" 2>/dev/null || true
 fi
-[ -f "$LAUNCHER" ] || die "launcher not found: $LAUNCHER — run scripts/setup.sh to fetch KISS, or pass an apk path"
+[ -f "$LAUNCHER" ] || die "launcher not found: $LAUNCHER — run scripts/setup.sh to fetch Neo-Launcher, or pass an apk path"
 
 # --- curated open-source system-app suite (scripts/fetch-apps.sh -> apps/) ---
 # Everything under apps/system/ is baked into /system/app. WITH_APPS=0 skips it.
 WITH_APPS="${WITH_APPS:-1}"
-# self-contained path: fetch the suite if it isn't here yet (mirrors the KISS auto-fetch above)
+# self-contained path: fetch the suite if it isn't here yet (mirrors the launcher auto-fetch above)
 if [ "$WITH_APPS" = 1 ] && [ ! -d apps/system ] && [ -f scripts/fetch-apps.sh ] && command -v curl >/dev/null 2>&1; then
   echo "  apps/ missing -> running scripts/fetch-apps.sh (downloads the app suite) ..."
   bash scripts/fetch-apps.sh || die "scripts/fetch-apps.sh failed"
@@ -291,8 +291,8 @@ if [ "${BAKE_MAGISK:-1}" = 1 ] && [ -f "$MAGISK_APK" ]; then
 # 0) Populate /data/adb/magisk from the baked env tar. This is the "additional setup" the Magisk
 #    app would otherwise nag for: an empty /data/adb/magisk shows "Additional setup required" and
 #    leaves Zygisk OFF. Doing it here means Zygisk turns on and LSPosed installs with NO manual
-#    taps. (Like the app's own setup, it takes effect on the next boot — the first-boot reboot
-#    that KISS already needs covers it.)
+#    taps. (Like the app's own setup, it takes effect on the NEXT boot — which is fine, the microG
+#    spoofing seed below already triggers a one-shot reboot on first setup.)
 if [ -f /system/etc/medion/magisk-env.tar ] && [ ! -f /data/adb/magisk/magiskinit ]; then
   mkdir -p /data/adb/magisk
   tar -xf /system/etc/medion/magisk-env.tar -C /data/adb/magisk 2>/dev/null
@@ -301,17 +301,16 @@ if [ -f /system/etc/medion/magisk-env.tar ] && [ ! -f /data/adb/magisk/magiskini
 fi
 # 1) Install the full Magisk over its stub, as a USER app (staged apk, no internet needed).
 #    The stub reports versionName=1.0 and CANNOT answer su requests -> anything that calls su
-#    (e.g. the KISS launcher's root check) hangs forever. The full app answers su.
+#    (Magisk modules, the seeding below, root-using apps) can't get root. The full app answers su.
 V=$(dumpsys package com.topjohnwu.magisk 2>/dev/null | grep -m1 versionName= | cut -d'=' -f2)
 if [ -f /system/etc/medion/Magisk.apk ] && { [ -z "$V" ] || [ "$V" = "1.0" ]; }; then
   pm install -r -g /system/etc/medion/Magisk.apk
 fi
-# 2) KISS runs `su` synchronously on its MAIN THREAD at startup (root check). On a rooted device
-#    that blocks on the Magisk prompt -> ANR ("KISS not responding"). Pre-grant su to the HOME
-#    launcher so su returns instantly. Persisted in /data, so it's effective from the 2nd boot;
-#    on a fresh /data the very first boot may need one reboot.
+# 2) Pre-grant su to the HOME launcher so its root features work with no Magisk prompt. (Neo-
+#    Launcher asks for su asynchronously, so unlike the old KISS launcher it never blocks the main
+#    thread / ANRs — this is just a convenience so root-backed launcher features work silently.)
 HP=$(cmd package resolve-activity -c android.intent.category.HOME 2>/dev/null | grep -m1 packageName= | cut -d'=' -f2)
-for p in "$HP" fr.neamar.kiss; do
+for p in "$HP" com.saggitt.omega; do
   [ -n "$p" ] || continue
   U=$(stat -c %u /data/data/"$p" 2>/dev/null)
   [ -n "$U" ] && magisk --sqlite "REPLACE INTO policies (uid,policy,until,logging,notification) VALUES($U,2,0,0,0)"
@@ -326,6 +325,18 @@ if [ -f /system/etc/medion/LSPosed.zip ]; then
   # Install LSPosed once from the staged zip.
   if [ ! -d /data/adb/modules/zygisk_lsposed ] && [ ! -d /data/adb/modules/lsposed ] && [ ! -d /data/adb/modules/zygisk_vector ]; then
     magisk --install-module /system/etc/medion/LSPosed.zip 2>/dev/null
+  fi
+  # Zygisk was just switched on in the db, but it only goes LIVE on the next boot — and LSPosed
+  # can't create its config db (which the spoofing seed below waits for) until Zygisk is live. On a
+  # fresh install that deadlocks: nothing ever triggers that first reboot, so the user has to do it
+  # by hand and spoofing silently never turns on. Kick ONE activation reboot when Zygisk is enabled
+  # but not yet injected into zygote. Marker-guarded so it fires exactly once, then the seed+reboot
+  # below completes the chain (Zygisk live -> LSPosed makes its db -> seed -> FakeGApps loads).
+  ZPID=$(pgrep -f zygote64 | head -1)
+  if [ ! -f /data/adb/medion-zygisk-activated ] \
+     && { [ -z "$ZPID" ] || ! grep -q zygisk "/proc/$ZPID/maps" 2>/dev/null; }; then
+    touch /data/adb/medion-zygisk-activated
+    ( sleep 6; setprop sys.powerctl reboot ) &
   fi
   # Signature spoofing: once LSPosed has created its config db (it does that on the boot after it's
   # installed), replace it with our seed (FakeGApps enabled + scoped to 'system'=system_server and
