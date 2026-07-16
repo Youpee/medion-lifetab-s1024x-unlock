@@ -10,3 +10,7 @@ super_unkiosk.img
 
 # APKs are redistributed from their own sources
 *.apk
+apps/
+.work-magisk/
+medion-fixup.zip
+*.zip

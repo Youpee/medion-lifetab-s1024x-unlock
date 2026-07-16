@@ -1,9 +1,10 @@
 # Medion Lifetab S1024X — Aldi kiosk removal (unkiosk)
 
 Unlock **Medion Lifetab S1024X** tablets that Aldi shipped locked into the kiosk launcher
-**AldiTalkFilialApp**: remove the kiosk and install your own launcher, so you get a normal,
-usable Android home screen again. (It also *tries* to enable ADB — best-effort, see the note
-below; the guaranteed win is the kiosk removal + your launcher.)
+**AldiTalkFilialApp**: remove the kiosk, install a launcher **and a full open-source app suite**
+(browser, camera, gallery, files, keyboard, F-Droid + Aurora Store) — so you get a normal, usable,
+**de-Googled** Android home screen again. (It also *tries* to enable ADB — best-effort, see the note
+below; the guaranteed wins are the kiosk removal, your launcher and the apps.)
 
 Everything is done **offline by editing the system image over BROM** (mtkclient), with
 **no adb and no GSI** — the stock ROM boots normally, TEE/keymaster keep working. Fully
@@ -18,9 +19,9 @@ reversible (full backup + restore included).
 
 | Branch | Best for | What you get |
 |---|---|---|
-| **`main`** (you are here) | **Arch / Linux**, no root | Remove the Aldi kiosk + install your own launcher. Native, simplest. |
-| **[`docker`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/docker)** | **Windows / macOS / any Linux**, no root | Same result, but the offline build runs in a **container**, so it works on any OS. |
-| **[`root`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)** | want a **fully usable system** | Everything above **+ ROOT (Magisk)** — which fixes what the stripped Medion build leaves broken. |
+| **`main`** (you are here) | **Arch / Linux**, no root | Kiosk removed + launcher + **a full open-source app suite** baked in (browser, camera, gallery, files, keyboard, F-Droid, Aurora Store). Stock camera/browser/gallery/keyboard removed; English default. Native, simplest. |
+| **[`docker`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/docker)** | **Windows / macOS / any Linux**, no root | **Exactly the same result + the same app suite**, but the offline build runs in a **container**, so it works on any OS. |
+| **[`root`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)** | want a **fully usable system** | Everything above **plus ROOT (Magisk) and microG** (with automatic signature spoofing), plus a dark-theme default and the shade helper — and the fixes for what the stripped Medion build leaves broken. |
 
 > **Heads-up:** on the plain no-root build (`main` / `docker`), the stock Medion **`user`**
 > image is half-broken — **ADB won't come up, Developer options crash Settings, the
@@ -29,6 +30,30 @@ reversible (full backup + restore included).
 > **[`root` branch](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root).**
 
 ---
+
+## Open-source apps (baked in as system apps)
+`scripts/fetch-apps.sh` pulls these from their **official** sources (F-Droid / the projects' own
+GitHub releases — nothing is re-hosted here) and `build-image.sh` bakes them into `/system`, so the
+tablet is usable out of the box with **no Google and no trackers**. `build-image.sh` fetches them
+automatically if `apps/` is missing.
+
+| Role | App | Package | Source |
+|------|-----|---------|--------|
+| Browser | **Cromite** | `org.cromite.cromite` | GitHub `uazo/cromite` (arm64) |
+| App store (FOSS) | **F-Droid** | `org.fdroid.fdroid` | f-droid.org |
+| App store (Play, anon) | **Aurora Store** | `com.aurora.store` | F-Droid |
+| Camera | **Fossify Camera** | `org.fossify.camera` | F-Droid |
+| Gallery | **Fossify Gallery** | `org.fossify.gallery` | F-Droid |
+| Files | **Material Files** | `me.zhanghai.android.files` | F-Droid |
+| Keyboard | **HeliBoard** (offline, no INTERNET) | `helium314.keyboard` | F-Droid |
+
+Versions are **pinned** (see `apps/VERSIONS.txt`). The stock camera/browser/gallery/keyboard are
+**removed** so these become the defaults, and the UI defaults to **English**. `WITH_APPS=0` skips the
+whole suite. Full rationale + internals are in **[docs/app-suite.md](docs/app-suite.md)**.
+
+> **microG** (Google-app compatibility with signature spoofing) needs root, so it's **not** on this
+> branch — it ships on the **[`root` branch](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)**,
+> which adds microG + Magisk on top of this exact app suite.
 
 ## ⚠️ Disclaimer
 Unlocking the bootloader and flashing is **at your own risk**: you may void the warranty
