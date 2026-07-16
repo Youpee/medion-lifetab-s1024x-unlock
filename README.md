@@ -187,6 +187,8 @@ drop-in shade app (**Power Shade** / **Material Notification Shade**, `com.treyd
 panel via Accessibility. There is **no open-source shade** (the whole category is one ad-supported dev),
 and we won't redistribute a proprietary APK — grab the **official** one yourself (never a "Mod").
 
+**Recommended: Power Shade** (`com.treydev.pns`) — the one this project was tested with; Material Notification Shade / One Shade are the same developer and work the same, so pick whichever.
+
 > On the **`root` branch** the build auto-configures that shade app *and firewalls it off the internet*
 > so it can't phone home. Here on no-root it works via Accessibility, but you can't firewall it — one
 > more reason the `root` branch is the better experience.
