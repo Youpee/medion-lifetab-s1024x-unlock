@@ -14,23 +14,27 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
 say(){ printf '\n=== %s ===\n' "$*"; }
 have(){ command -v "$1" >/dev/null 2>&1; }
+G=$'\033[1;32m'; R=$'\033[1;31m'; N=$'\033[0m'   # terminal highlighting (renders through tee too)
 
-say "1) System packages"
+say "1) Base tools + container engine (podman)"
+# The build tools (avbtool/lpmake/e2fsprogs) run INSIDE the container (scripts/docker-build.sh),
+# so the host only needs: git/python/openssl/curl/libusb + a container engine + mtkclient.
+# (android-tools/e2fsprogs are also installed on Arch so the native scripts/build-image.sh works too.)
 if have pacman; then
-  sudo pacman -S --needed --noconfirm android-tools e2fsprogs python openssl git libusb
+  sudo pacman -S --needed --noconfirm git python openssl curl libusb podman android-tools e2fsprogs unzip
 elif have apt; then
   sudo apt update
-  sudo apt install -y git python3 python3-venv python3-pip openssl e2fsprogs \
-       libusb-1.0-0 android-sdk-libsparse-utils || true
-  echo "NOTE (Debian/Ubuntu): lpmake/lpunpack/lpdump and avbtool are usually NOT in the repos."
-  echo "  Get them from AOSP 'android-tools'/'aftv-tools' builds or pip (avbtool), then re-run."
+  sudo apt install -y git python3 python3-venv python3-pip openssl curl libusb-1.0-0 podman unzip
 elif have dnf; then
-  sudo dnf install -y git python3 openssl e2fsprogs libusbx android-tools || true
-  echo "NOTE (Fedora): if lpmake/lpunpack/avbtool are missing, install AOSP android-tools manually."
+  sudo dnf install -y git python3 openssl curl libusbx podman unzip
 else
-  echo "Unknown package manager. Install manually: android-tools (avbtool,lpmake,lpunpack,"
-  echo "lpdump,simg2img,img2simg), e2fsprogs, python3, openssl, git, libusb."
+  echo "Unknown package manager (Windows/macOS?). Install a container engine yourself:"
+  echo "  Docker Desktop  https://www.docker.com/products/docker-desktop"
+  echo "  or Podman Desktop  https://podman-desktop.io"
+  echo "Then install mtkclient (Python) and use scripts/docker-build.sh."
 fi
+# verify a container engine works (for the docker-build path)
+for e in docker podman; do have "$e" && "$e" info >/dev/null 2>&1 && { echo "container engine OK: $e"; break; }; done
 
 say "2) mtkclient (BROM tool)"
 if [ -x "$MTK_DIR/venv/bin/python" ]; then
@@ -57,22 +61,22 @@ else
   echo "Could not find mtkclient udev rules — flashing may need sudo (that's fine)."
 fi
 
-say "4) Launcher (KISS from F-Droid)"
+say "4) Launcher (Neo-Launcher from GitHub)"
 mkdir -p "$REPO/launchers"
-if [ -f "$REPO/launchers/KISS.apk" ]; then
-  echo "launchers/KISS.apk already present — skipping."
+if [ -f "$REPO/launchers/NeoLauncher.apk" ]; then
+  echo "launchers/NeoLauncher.apk already present — skipping."
 elif have curl && have python3; then
-  code=$(curl -fsSL https://f-droid.org/api/v1/packages/fr.neamar.kiss 2>/dev/null \
-         | python3 -c 'import sys,json;print(json.load(sys.stdin)["suggestedVersionCode"])' 2>/dev/null || true)
-  if [ -n "$code" ] && curl -fSL -o "$REPO/launchers/KISS.apk" "https://f-droid.org/repo/fr.neamar.kiss_${code}.apk"; then
-    echo "downloaded launchers/KISS.apk (fr.neamar.kiss build $code)"
+  url=$(curl -fsSL https://api.github.com/repos/NeoApplications/Neo-Launcher/releases/latest 2>/dev/null \
+        | python3 -c 'import sys,json;print(next(a["browser_download_url"] for a in json.load(sys.stdin)["assets"] if a["name"].replace(".","").lower().endswith("releaseapk")))' 2>/dev/null || true)
+  if [ -n "$url" ] && curl -fSL -o "$REPO/launchers/NeoLauncher.apk" "$url"; then
+    echo "downloaded launchers/NeoLauncher.apk"
   else
-    echo "couldn't fetch KISS automatically — download it manually to launchers/KISS.apk:"
-    echo "  https://f-droid.org/packages/fr.neamar.kiss/"
+    echo "couldn't fetch Neo-Launcher automatically — download it manually to launchers/NeoLauncher.apk:"
+    echo "  https://github.com/NeoApplications/Neo-Launcher/releases"
   fi
 else
-  echo "curl/python3 missing — download KISS manually to launchers/KISS.apk:"
-  echo "  https://f-droid.org/packages/fr.neamar.kiss/"
+  echo "curl/python3 missing — download Neo-Launcher manually to launchers/NeoLauncher.apk:"
+  echo "  https://github.com/NeoApplications/Neo-Launcher/releases"
 fi
 
 say "5) Check"
@@ -82,5 +86,5 @@ for t in avbtool lpmake lpunpack lpdump simg2img debugfs resize2fs python3 opens
 done
 [ -x "$MTK_DIR/venv/bin/python" ] && echo "  ok  mtkclient ($MTK_DIR)" || { echo "  MISSING  mtkclient"; MISS=1; }
 echo
-[ "$MISS" = 0 ] && printf '\033[1;32mAll set. Next: scripts/backup-stock.sh\033[0m\n' \
-                || printf '\033[1;31mSome tools are missing — install them, then re-run.\033[0m\n'
+[ "$MISS" = 0 ] && printf '%sAll set. Next: scripts/backup-stock.sh%s\n' "$G" "$N" \
+                || printf '%sSome tools are missing — install them, then re-run.%s\n' "$R" "$N"

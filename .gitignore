@@ -14,3 +14,7 @@ apps/
 .work-magisk/
 medion-fixup.zip
 *.zip
+
+# build logs (may contain local paths)
+*.log
+.work-build.log
