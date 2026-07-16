@@ -267,6 +267,10 @@ Notification Shade** (`com.treydev.mns`), **One Shade** (`com.treydev.ons`). The
 under an ad company, and **there is no open-source shade** (we checked, repeatedly — the whole category
 is this one company).
 
+**Recommended: Power Shade** (`com.treydev.pns`) — it's the one this build was tested with. Material
+Notification Shade and One Shade are the same developer and work the same, so pick whichever; the boot
+service handles any of them.
+
 - **You install it yourself.** It's proprietary and not on F-Droid, so we won't redistribute it — grab
   the **official** APK (Play/APKMirror) and sideload it. **Never a "Mod"**: a repackaged app that asks
   for Accessibility is a malware risk.
