@@ -61,7 +61,11 @@ emit_libs(){ # $1=apk  $2=/system/(priv-)app/Name   (appends debugfs cmds; uses 
     {
       echo "write $ld/$b $base/lib/arm64/$b"
       echo "ea_set -f $W/lbl_sf $base/lib/arm64/$b security.selinux"
-      echo "sif $base/lib/arm64/$b mode 0100644"
+      # 0755, not 0644: some apps ship an EXECUTABLE disguised as lib*.so (e.g. TaskManager's
+      # libtaskmanagerd.so root daemon, which its Root mode exec()s via su). On a read-only /system
+      # it can't be chmod'd at runtime, so it must be baked executable — otherwise the app dies with
+      # "can't execute: Permission denied". The +x bit is harmless for real (dlopen'd) libraries.
+      echo "sif $base/lib/arm64/$b mode 0100755"
     } >> "$W/ea.cmd"
     n=$((n+1))
   done
