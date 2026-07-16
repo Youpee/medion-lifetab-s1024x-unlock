@@ -7,6 +7,12 @@ Worked out on **KDE Plasma 6 Wayland + AMD**, but the tricky part — making a *
 screen that Sunshine can capture — is written to work on **any laptop**, not just one specific
 machine. The connector name is auto-detected, so nothing here is hardcoded to a single PC.
 
+> ⚠️ **Experimental — the most fragile part of this repo, and it may not work on your setup.**
+> Creating a *virtual* monitor is highly specific to your compositor, GPU and driver. This was built
+> and tested only on **KDE Plasma 6 Wayland + AMD**. On a different desktop (GNOME, X11) or GPU
+> (NVIDIA / Intel) the virtual-monitor step may need changes or **may not come up at all**. Treat it
+> as a starting point to adapt, not a guaranteed feature — nothing else in the repo depends on it.
+
 ---
 
 ## TL;DR (the whole thing)

@@ -5,6 +5,10 @@
 # fake 1920x1200 EDID, so Sunshine's `kms` capture sees a real extra output. The connector is
 # NOT hardcoded, so it works on any laptop — not just the one it was written on.
 #
+# EXPERIMENTAL: tested only on KDE Plasma 6 Wayland + AMD. Virtual-monitor creation is
+# compositor/GPU/driver-specific and MAY NOT WORK on other setups (GNOME/X11, NVIDIA/Intel).
+# Treat it as a starting point to adapt. See docs/second-monitor-kde.md.
+#
 # Override the auto-pick if needed:   CONN=card0-DP-2 vmon.sh on
 # Needs: an EDID at $EDID (make with extras/make-edid.py) and root for DRM sysfs.
 # See docs/second-monitor-kde.md.
