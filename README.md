@@ -1,6 +1,7 @@
 # Medion Lifetab S1024X — un-kiosk + de-Google + root
 
-Aldi sold this tablet **bolted shut**: it boots straight into a kiosk app (`AldiTalkFilialApp`) and
+Aldi sold this tablet — the **ALDI TALK Filial Tablet** (Medion **MD 60447**, the case/box reads
+**Model S10242**) — **bolted shut**: it boots straight into a kiosk app (`AldiTalkFilialApp`) and
 that's all you get. No launcher, no settings, no apps — a €100 paperweight with a store demo on it.
 
 This repo turns it into a **clean, de-Googled, rooted Android** — a real launcher, a full set of
@@ -16,10 +17,10 @@ We got here by falling into basically every trap this device had to offer. If yo
 did that take three hours" story, there's a whole **[section for that](#the-stuff-that-fought-back)** —
 and the deep technical write-up lives in **[docs/app-suite.md](docs/app-suite.md)**.
 
-> Keywords: Medion Lifetab S1024X, Aldi kiosk, AldiTalkFilialApp, MT6765, medion_l1016b, achilles6,
-> mtkclient, remove kiosk, root, Magisk, microG, signature spoofing, SELinux permissive, de-Google,
-> debloat. (German: *Aldi Tablet entsperren, Kiosk-Modus / Filial-App entfernen, Medion Lifetab
-> S1024X rooten.*)
+> Keywords: ALDI TALK Filial Tablet, Medion MD 60447 / MD60447, Model S10242, Medion Lifetab S1024X,
+> Aldi kiosk, AldiTalkFilialApp, MediaTek MT6765 / MT8768, medion_l1016b, mtkclient, remove kiosk, root,
+> Magisk, microG, signature spoofing, SELinux permissive, de-Google, debloat. (German: *Aldi Tablet
+> entsperren, Kiosk-Modus / Filial-App entfernen, Medion Lifetab S1024X / S10242 (MD 60447) rooten.*)
 
 ---
 
@@ -67,7 +68,8 @@ License: MIT.
 
 | | |
 |---|---|
-| Device | Medion Lifetab S1024X (`medion_l1016b`, board `achilles6`) |
+| Device | Medion Lifetab **S1024X** (`ro.product.model` = `LIFETAB S1024X`; build `S1024X_EEA`, flavor `medion_l1016b`) |
+| Retail label | Sold as the **"ALDI TALK Filial Tablet"** — the case/box read **Model S10242**, **MD 60447** (`MD60447`). Same device; that's the retail sticker name vs. the internal `S1024X` codename. |
 | SoC | MediaTek MT6765 |
 | Stock | Android 10, A-only, dynamic partitions (`super`) |
 | BROM | unprotected (SBC/SLA/DAA = false) → mtkclient just works |
