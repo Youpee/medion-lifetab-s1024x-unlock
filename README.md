@@ -1,48 +1,71 @@
-# Medion Lifetab S1024X — un-kiosk + de-Google (no root)
+# Medion Lifetab S1024X — Unlock & De-Google (no root, containerized)
 
-Aldi sold this tablet — the **ALDI TALK Filial Tablet** (Medion **MD 60447**, the case/box reads
-**Model S10242**) — **bolted shut**: it boots straight into a kiosk app (`AldiTalkFilialApp`) and
-that's all you get. No launcher, no settings, no apps — a €100 paperweight with a store demo on it.
+> Turn the Aldi kiosk tablet into a clean, de-Googled Android — **without root**, with the whole
+> build running in a **container** so it works on **Windows, macOS, and any Linux**. Everything runs
+> **offline** from your own backup and is **fully reversible**.
 
-This branch (`docker`) frees it **without root**, with the whole build running in a **container** so it
-works on **Windows, macOS and any Linux** (not just Arch). It removes the kiosk, drops in a real
-launcher, and **bakes in a full set of open-source apps** — a browser, camera, gallery, files,
-keyboard, two app stores and a task manager. **No Google, no trackers.** Everything is done **offline**
-from *your own* backup over BROM (mtkclient) — the stock ROM boots normally, and it's **fully
-reversible**.
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Device](https://img.shields.io/badge/device-Medion%20Lifetab%20S1024X-informational)
+![SoC](https://img.shields.io/badge/SoC-MediaTek%20MT6765-orange)
+![Android](https://img.shields.io/badge/Android-10-brightgreen)
+![Branch](https://img.shields.io/badge/branch-docker-2496ED)
 
-> **Want the deep version?** The **[`root` branch](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)**
-> adds Magisk root, **microG with working signature spoofing**, a dark-theme default, working ADB /
-> Developer options, and an auto-firewalled notification shade — i.e. it fixes the things this no-root
-> build can't. If you want a *genuinely* usable tablet, that's the one. See the table below.
+The **ALDI TALK Filial Tablet** (Medion **MD 60447**, retail label **Model S10242**) ships bolted
+shut: it boots straight into a single kiosk app (`AldiTalkFilialApp`) — no launcher, no settings,
+no apps. This project unlocks it and rebuilds it into a usable, private Android device.
 
-> Keywords: ALDI TALK Filial Tablet, Medion MD 60447 / MD60447, Model S10242, Medion Lifetab S1024X,
-> Aldi kiosk, AldiTalkFilialApp, MediaTek MT6765 / MT8768, medion_l1016b, mtkclient, remove kiosk,
-> de-Google, debloat. (German: *Aldi Tablet entsperren, Kiosk-Modus / Filial-App entfernen, Medion
-> Lifetab S1024X / S10242 (MD 60447).*)
+This is the **`docker`** branch — identical output to [`main`](../../tree/main), but the build runs
+in a Docker/Podman container instead of natively, so **you don't need Arch**. For root, microG, and
+the fixes this build can't do, see [Choose your build](#choose-your-build).
 
 ---
 
-## Pick your flavor (three branches)
+## Contents
 
-| Branch | Best for | What you get |
+- [What you get](#what-you-get)
+- [Choose your build](#choose-your-build)
+- [Device facts](#device-facts)
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [Entering BROM](#entering-brom)
+- [The app suite](#the-app-suite)
+- [The notification shade](#the-notification-shade)
+- [Known limitations](#known-limitations)
+- [Repository layout](#repository-layout)
+- [Restore & re-flash](#restore--re-flash)
+- [Technical deep dive](#technical-deep-dive)
+- [Credits](#credits)
+- [License](#license)
+
+---
+
+## What you get
+
+- **No kiosk** — a real home screen (Neo-Launcher) instead of `AldiTalkFilialApp`.
+- **A full open-source app suite** baked into `/system` — browser, camera, gallery, files,
+  keyboard, two app stores, and a task manager. No Google binaries, no trackers.
+- **English UI** by default (stock ships German).
+- **Debloat** — the stock camera/browser/gallery/keyboard are removed so the open-source ones win.
+- **Cross-platform build** — the image is built inside a container, so any OS with Docker/Podman works.
+
+This build does **not** include root, microG, or a working notification shade — those require root.
+See the [`root` branch](../../tree/root).
+
+---
+
+## Choose your build
+
+| Branch | Platform | Result |
 |---|---|---|
-| **[`main`](https://github.com/Youpee/medion-lifetab-s1024x-unlock)** | Arch / Linux, no root | Kiosk gone + launcher + **the full open-source app suite** + debloat + English default. Native, simplest. |
-| **`docker`** (you are here) | Windows / macOS / any Linux, no root | **Exactly the same result**, but the build runs in a container so it works on any OS. |
-| **[`root`](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)** | a genuinely usable tablet | Everything above **plus Magisk root + microG (auto signature spoofing)**, dark theme, working ADB/Developer options, and an auto-firewalled shade. |
+| **`docker`** (you are here) | Windows / macOS / any Linux, no root | Kiosk removed + launcher + full app suite + debloat + English default. Build runs in a container. |
+| [`main`](../../tree/main) | Arch / Linux, no root | Same result, built natively (no container). |
+| [`root`](../../tree/root) | Arch / Linux | Everything above **plus Magisk root, microG (auto signature spoofing), dark theme, and fixes for ADB / Developer options / shade**. |
 
-> **Honest heads-up:** on the stock Medion **`user`** image, just removing the kiosk leaves a
-> half-broken system — **ADB won't come up and Developer options crash Settings.** That's the ROM's
-> incomplete SELinux policy, not our bug, and you can't fix it without root. So on this branch you get
-> a clean launcher + all the apps, but ADB/Dev-options stay flaky. Want them fixed? → `root` branch.
-
----
-
-## ⚠️ The obligatory disclaimer
-
-Unlocking the bootloader and flashing is **at your own risk** — you can void the warranty and, if you
-fumble it, brick the device (recoverable as long as your backup + BROM are intact). This repo ships
-**no** proprietary Medion/MTK firmware; you work with **your own** backup. License: MIT.
+> **Honest heads-up:** on the stock Medion `user` image, removing only the kiosk leaves a
+> half-broken system — **ADB won't start and Developer options crash Settings**, because the stock
+> SELinux policy is incomplete. That's the ROM, not this project, and it **can't be fixed without
+> root**. On this branch you get a clean launcher and all the apps, but ADB / Developer options stay
+> flaky. Want them fixed? → [`root` branch](../../tree/root).
 
 ---
 
@@ -50,116 +73,97 @@ fumble it, brick the device (recoverable as long as your backup + BROM are intac
 
 | | |
 |---|---|
-| Device | Medion Lifetab **S1024X** (`ro.product.model` = `LIFETAB S1024X`; build `S1024X_EEA`, flavor `medion_l1016b`) |
-| Retail label | Sold as the **"ALDI TALK Filial Tablet"** — the case/box read **Model S10242**, **MD 60447** (`MD60447`). Same device; that's the retail sticker name vs. the internal `S1024X` codename. |
+| Device | Medion Lifetab **S1024X** (`ro.product.model = LIFETAB S1024X`, build `S1024X_EEA`, flavor `medion_l1016b`) |
+| Retail label | **ALDI TALK Filial Tablet** — case/box read **Model S10242**, **MD 60447**. Same device; retail sticker vs. internal `S1024X` codename. |
 | SoC | MediaTek MT6765 |
-| Stock | Android 10, A-only, dynamic partitions (`super`) |
-| BROM | unprotected (SBC/SLA/DAA = false) → mtkclient just works |
-| Kiosk | `/system/priv-app/AldiTalkFilialApp` (the only HOME app in stock) |
+| Stock OS | Android 10, A-only, dynamic partitions (`super`) |
+| BROM | Unprotected (SBC/SLA/DAA = false) → mtkclient works with no keys |
+| Kiosk app | `/system/priv-app/AldiTalkFilialApp` (the only HOME app in stock) |
 
-## What you need
+---
 
-- **Any OS with Docker or Podman** for the build (Windows, macOS, Linux) — that's the whole point of
-  this branch. On Linux, `scripts/setup.sh` installs rootless **podman**; on Windows/macOS install
+## Requirements
+
+- **Any OS with Docker or Podman** for the build (Windows, macOS, Linux) — that's the point of this
+  branch. On Linux, `scripts/setup.sh` installs rootless **Podman**; on Windows/macOS install
   **Docker Desktop**.
-- **The USB steps are NOT in the container.** `backup-stock.sh`, the unlock and `flash.sh` talk to the
-  tablet over USB via native **mtkclient** (Python): Linux runs it directly; on **Windows** use
-  **WSL2 + usbipd-win**; **macOS** runs mtkclient natively.
-- **~15 GB free disk** — the `super` backup alone is 4 GB and the build needs working space + a 4 GB
-  output image.
+- **The USB steps run natively, not in the container.** `backup-stock.sh`, the unlock, and `flash.sh`
+  talk to the tablet over USB via native **mtkclient** (Python): Linux runs it directly; **Windows**
+  uses **WSL2 + usbipd-win**; **macOS** runs mtkclient natively.
+- **~15 GB free disk** — the `super` backup alone is 4 GB, plus build workspace and a 4 GB output
+  image.
 - A **USB data cable**.
 
 ---
 
-## What is BROM, and how do I get into it?
-
-**BROM** (Boot ROM) is the USB bootloader baked into the SoC itself. It runs *before* any of the
-tablet's own firmware, so it's always reachable and basically unbrickable — this is how mtkclient
-reads/writes partitions no matter what state the tablet is in. On this device BROM is unprotected, so
-no auth keys are needed.
-
-To enter it:
-1. **Start the mtkclient command first** — it sits there waiting.
-2. Tablet **off** (a device that isn't booted drops into BROM on connect). If it's stuck looping,
-   unplug it until it disappears from `lsusb`.
-3. **Press and hold VOLUME-DOWN** — the lower-volume side of the rocker, **not** Power — and, keeping
-   it held, plug in USB. mtkclient catches BROM in ~1–2 seconds. Let go once it connects.
-
-> **The buttons aren't labelled.** Holding the tablet with the camera at the top-right (as in the
-> photo), **VOLUME-DOWN is the button on the LEFT** (`Vol−`):
->
-> ![Which button is Volume-Down](docs/volume-buttons.jpg)
-
-If you get `DAA_SIG_VERIFY_FAILED (0x7024)`, the tablet came up in **Preloader** (a later stage), not
-BROM: unplug fully (must vanish from `lsusb`), then retry — start holding **Vol−** *before* you insert
-USB.
-
----
-
-## Steps
+## Quick start
 
 ```bash
-git clone https://github.com/Youpee/medion-lifetab-s1024x-unlock && cd medion-lifetab-s1024x-unlock
+git clone https://github.com/Youpee/medion-lifetab-s1024x-unlock
+cd medion-lifetab-s1024x-unlock
+git checkout docker
 ```
 
-**First time? Do all of these.** (Coming back for a re-flash? Jump to the [returning-user note](#already-did-this-once).)
+**First run — do all steps.** Coming back to re-flash? See [Restore & re-flash](#restore--re-flash).
 
 ```bash
-# 0a) one-time: install deps + mtkclient (+ downloads the Neo-Launcher APK)   [Arch/Linux]
+# 0a. One-time: install dependencies + mtkclient (+ Podman on Linux; downloads the launcher APK).
 scripts/setup.sh
 
-# 0b) REQUIRED: a full stock backup. This is BOTH your safety net AND the donor the build edits.
-#     Tablet in BROM (hold Vol−, plug USB). Takes a few minutes.
+# 0b. Required: full stock backup. This is BOTH your safety net AND the donor the build edits.
+#     Put the tablet in BROM first (see below). Runs natively over USB. Takes a few minutes.
 scripts/backup-stock.sh
 
-# 0c) REQUIRED: unlock the bootloader (otherwise vbmeta_disable is ignored and the modified /system
-#     won't boot). Tablet in BROM again, then:
+# 0c. Required: unlock the bootloader (otherwise vbmeta_disable is ignored and the modified
+#     /system will not boot). Tablet in BROM again, then:
 ( cd ~/mtkclient && sudo ./venv/bin/python mtk.py da seccfg unlock )
-#     -> "Successfully wrote seccfg" = done ("already unlocked" is fine). This wipes /data — expected.
+#     "Successfully wrote seccfg" (or "already unlocked") = done. This wipes /data — expected.
 
-# 1) BUILD the image IN A CONTAINER (works on any OS with Docker/Podman). Downloads + bakes the app
-#    suite; produces super_unkiosk.img + vbmeta_disable.img. Needs the network once.
+# 1. Build the image IN A CONTAINER (any OS with Docker/Podman). Downloads + bakes the app suite;
+#    produces super_unkiosk.img + vbmeta_disable.img. Needs the network once.
 scripts/docker-build.sh
-#   (native alternative on Arch, no Docker: scripts/build-image.sh && scripts/make-vbmeta-disable.sh)
+#    (native alternative on Arch, no container: scripts/build-image.sh && scripts/make-vbmeta-disable.sh)
 
-# 2) FLASH over BROM (this wipes /data).
+# 2. Flash over BROM (this wipes /data). Runs natively over USB.
 scripts/flash.sh super_unkiosk.img vbmeta_disable.img
 
-# 3) Unplug, power on. First boot takes a couple of minutes (fresh /data + dexopt of big apps).
+# 3. Unplug, power on. First boot takes a couple of minutes (fresh /data + dexopt of large apps).
 #    Your launcher comes up instead of the Aldi kiosk.
 
-# 4) (optional) free disk space — keeps your stock backup:
+# 4. Optional: free disk space (keeps your stock backup).
 scripts/clean.sh
 ```
 
-### Already did this once?
+### Entering BROM
 
-Re-flashing or updating the build? Skip what you already have:
+**BROM** (Boot ROM) is the USB bootloader baked into the SoC. It runs before any of the tablet's
+own firmware, so it is always reachable and effectively unbrickable — this is how mtkclient reads
+and writes partitions regardless of device state. On the S1024X, BROM is unprotected (no auth keys).
 
-- **Skip `0a` (setup)** if the tools + `~/mtkclient` are still installed.
-- **Skip `0b` (backup)** if you still have `~/mtkclient/backup_nv/` — the build reuses it as the donor,
-  and it's your safety net either way. *(Never delete it.)*
-- **Skip `0c` (unlock)** if the bootloader is already unlocked — it stays unlocked across flashes.
-  (Re-running the unlock just says "already unlocked", so it's harmless.)
-- **You still do steps 1–2** (build + flash). Flashing `super` always re-wipes `/data`, so the tablet
-  comes up fresh regardless.
+1. **Start the mtkclient command first** — it waits for the device.
+2. **Power the tablet off.** A device that isn't booted drops into BROM on connect. If it's stuck
+   looping, unplug until it disappears from `lsusb`.
+3. **Hold VOLUME-DOWN** (the lower-volume side of the rocker — not Power) and, keeping it held, plug
+   in USB. mtkclient catches BROM in 1–2 seconds. Release once it connects.
 
-In short: **tools + backup + unlock are one-time; build + flash you can repeat as often as you like.**
+> Buttons are unlabelled. Holding the tablet with the camera at the top-right, **VOLUME-DOWN is the
+> button on the LEFT**:
+>
+> ![Which button is Volume-Down](docs/volume-buttons.jpg)
 
-Revert to bone-stock anytime:
-```bash
-scripts/restore-stock.sh    # puts the factory Aldi ROM back from your backup
-```
+If you get `DAA_SIG_VERIFY_FAILED (0x7024)`, the tablet came up in **Preloader** (a later stage),
+not BROM. Unplug fully (it must vanish from `lsusb`), then retry — start holding **Vol−** *before*
+inserting USB.
 
 ---
 
-## The open-source app suite
+## The app suite
 
-`scripts/fetch-apps.sh` pulls these from their **official** sources (F-Droid API / the projects' own
-GitHub releases — nothing is re-hosted here), pins exact versions (`apps/VERSIONS.txt`), and
-`build-image.sh` bakes them into `/system` as **system apps** (they survive a factory reset and are the
-defaults). The stock camera/browser/gallery/keyboard get removed so ours win, and the UI defaults to
-**English**.
+`scripts/fetch-apps.sh` downloads each app from its **official** source (F-Droid API or the
+project's own GitHub releases — nothing is re-hosted here), pins exact versions in
+`apps/VERSIONS.txt`, and `build-image.sh` bakes them into `/system` as **system apps** (they survive
+a factory reset and are the defaults). The stock camera/browser/gallery/keyboard are removed and the
+UI defaults to **English**.
 
 | Role | App | Package | Source |
 |---|---|---|---|
@@ -170,71 +174,120 @@ defaults). The stock camera/browser/gallery/keyboard get removed so ours win, an
 | Camera | **Fossify Camera** | `org.fossify.camera` | F-Droid |
 | Gallery | **Fossify Gallery** | `org.fossify.gallery` | F-Droid |
 | Files | **Material Files** | `me.zhanghai.android.files` | F-Droid |
-| Keyboard | **HeliBoard** (100% offline, no INTERNET) | `helium314.keyboard` | F-Droid |
+| Keyboard | **HeliBoard** (offline, no INTERNET permission) | `helium314.keyboard` | F-Droid |
 | Running apps / cleaner | **TaskManager** (needs root or Shizuku) | `com.rk.taskmanager` | GitHub `RohitKushvaha01/TaskManager` |
 
-**Cromite, not Brave** (no crypto wallet / rewards). **Fossify, not Simple Mobile Tools** (those got
-bought by an ad company). `WITH_APPS=0` skips the whole suite; delete APKs from `apps/system/` before
-building to trim it. Full rationale + build internals are in **[docs/app-suite.md](docs/app-suite.md)**.
+Cromite is chosen over Brave (no crypto wallet/rewards); Fossify over Simple Mobile Tools (which was
+acquired by an ad company). `WITH_APPS=0` skips the whole suite; delete APKs from `apps/system/`
+before building to trim it.
 
-> **microG** (Google-app compatibility with signature spoofing) needs root, so it's **not** on this
-> branch — it ships on the **[`root` branch](https://github.com/Youpee/medion-lifetab-s1024x-unlock/tree/root)**.
-> **TaskManager** needs root or Shizuku to actually kill apps — on this no-root branch you'd set it up
-> via Shizuku (or just use the `root` branch, where it works out of the box).
-
-### The notification shade
-
-Heads-up: the **stock notification shade won't pull down** on this build — Medion gutted the shade in
-their (platform-signed, un-rebuildable) SystemUI for kiosk use, so it's stuck. The workaround is a
-drop-in shade app (**Power Shade** / **Material Notification Shade**, `com.treydev.*`) that draws its own
-panel via Accessibility. There is **no open-source shade** (the whole category is one ad-supported dev),
-and we won't redistribute a proprietary APK — grab the **official** one yourself (never a "Mod").
-
-**Recommended: Power Shade** (`com.treydev.pns`) — the one this project was tested with; Material Notification Shade / One Shade are the same developer and work the same, so pick whichever.
-
-> On the **`root` branch** the build auto-configures that shade app *and firewalls it off the internet*
-> so it can't phone home. Here on no-root it works via Accessibility, but you can't firewall it — one
-> more reason the `root` branch is the better experience.
+> **microG** (Google-app compatibility with signature spoofing) needs root, so it is **not** on this
+> branch — it ships on the [`root` branch](../../tree/root). **TaskManager** also needs root or
+> Shizuku to actually kill apps; on this no-root branch you'd wire it up via Shizuku.
 
 ---
 
-## The stuff that fought back
+## The notification shade
 
-For the curious (and the next person who Googles this device) — a couple of the traps, with the full
-gory detail in **[docs/app-suite.md](docs/app-suite.md)**:
+Medion disabled the stock shade at the SystemUI code level — it won't pull down on any build.
+SystemUI is platform-signed with Medion's private key, so it can't be rebuilt. The workaround is a
+**drop-in shade app** that draws its own panel via Accessibility: **Power Shade** (`com.treydev.pns`),
+**Material Notification Shade** (`com.treydev.mns`), or **One Shade** (`com.treydev.ons`).
 
-- **"Cromite and Material Files just… don't open."** `UnsatisfiedLinkError`. A read-only `/system` app
-  can't unpack its native libraries the way a normal install does, and if they're compressed in the APK
-  the loader can't use them either. So we extract the deflated `.so`s into `/system/app/<x>/lib/arm64`
-  at build time. (Cromite's `libchrome.so` is a chonky 215 MB — surprise.)
-- **"ADB / Developer options are dead."** Not fixable here — the stock ROM's SELinux policy is
-  incomplete, and under *enforcing* the denied binder calls crash adbd and Settings. The **`root`
-  branch** flips SELinux to permissive on boot and it all comes back; a no-root build can't.
-- **"…the shade, recents?"** Medion killed the shade at the SystemUI code level (and the platform key to
-  rebuild it is Medion's own private key — unobtainable). Recents needs a QuickStep launcher that our
-  file-based-encryption setup keeps crashing. Both are covered honestly on the `root` branch.
+These are proprietary (there is no open-source shade), so this repo does not redistribute them —
+install the **official** APK yourself (never a repackaged "Mod"). **Recommended: Power Shade.**
 
-## Layout
+> On the [`root` branch](../../tree/root) the build auto-configures the shade *and firewalls it off
+> the internet* so it can't phone home. On this no-root branch it works via Accessibility, but you
+> can't firewall it.
+
+---
+
+## Known limitations
+
+- **ADB / Developer options don't work** — the stock ROM's SELinux policy is incomplete, and under
+  *enforcing* the denied binder calls crash adbd and Settings. Fixing this needs root
+  (the [`root` branch](../../tree/root) flips SELinux to permissive on boot); a no-root build can't.
+- **The notification shade** is disabled by Medion — see above; use a drop-in shade app.
+- **Recents / overview** (□ button) is unavailable — the stock ROM points it at a Launcher3 component
+  Aldi never shipped, and the QuickStep workaround crashes on file-based encryption.
+
+All three are covered in full in [docs/app-suite.md](docs/app-suite.md).
+
+---
+
+## Repository layout
 
 ```
+Dockerfile               Build environment for the containerized image build
 scripts/
-  setup.sh               # install deps + mtkclient (run once)
-  backup-stock.sh        # full stock backup over BROM  (safety net + build donor)
-  fetch-apps.sh          # download the pinned app suite -> apps/  (--check just probes URLs)
-  build-image.sh         # build super: remove kiosk + launcher + app suite + debloat + English
-  make-vbmeta-disable.sh # vbmeta with AVB verification off
-  flash.sh               # flash super + vbmeta over BROM
-  verify.sh              # post-install health check over adb (read-only)
-  restore-stock.sh       # put the factory ROM back
-  clean.sh               # free disk space (keeps your backup)
-docs/app-suite.md        # the deep technical write-up
+  setup.sh               Install dependencies + mtkclient (+ Podman on Linux) (run once)
+  backup-stock.sh        Full stock backup over BROM  (safety net + build donor)
+  fetch-apps.sh          Download the pinned app suite → apps/
+  build-image.sh         Build super: remove kiosk + launcher + app suite + debloat + English
+  make-vbmeta-disable.sh vbmeta with AVB verification off
+  docker-build.sh        Build everything in a container (Docker/Podman)
+  flash.sh               Flash super + vbmeta over BROM
+  verify.sh              Post-install health check over adb (read-only)
+  restore-stock.sh       Restore the factory ROM from your backup
+  clean.sh               Free disk space (keeps your backup)
+docs/
+  app-suite.md           Technical deep dive (apps + build internals)
 ```
+
+---
+
+## Restore & re-flash
+
+Revert to bone-stock at any time:
+
+```bash
+scripts/restore-stock.sh    # restores the factory Aldi ROM from your backup
+```
+
+**Re-flashing or updating the build?** Tools, backup, and unlock are one-time; build and flash you
+can repeat freely.
+
+- **Skip `0a` (setup)** if the tools and `~/mtkclient` are still installed.
+- **Skip `0b` (backup)** if `~/mtkclient/backup_nv/` still exists — the build reuses it as the donor
+  and it's your safety net. **Never delete it.**
+- **Skip `0c` (unlock)** if the bootloader is already unlocked (it stays unlocked across flashes;
+  re-running is harmless).
+- **Repeat steps 1–2.** Flashing `super` always re-wipes `/data`, so the tablet comes up fresh.
+
+---
+
+## Technical deep dive
+
+[docs/app-suite.md](docs/app-suite.md) documents the hard parts: native-library extraction for
+`/system` apps (`UnsatisfiedLinkError`), the privileged-app permission whitelist, debloat, and the
+English/default-settings tweaks.
+
+---
 
 ## Credits
 
-The reverse-engineering, tooling and this guide were worked out **with the help of Claude (Anthropic)**.
+Reverse-engineering, tooling, and this guide were worked out with the help of **Claude (Anthropic)**.
 
-Tools: **mtkclient** (bkerler), android-tools, avbtool. Launcher: **Neo-Launcher** (NeoApplications).
-Baked-in apps (all from their own official sources): **Cromite** (uazo), **F-Droid**, **Aurora Store**,
-**Fossify** Camera & Gallery, **Material Files** (zhanghai), **HeliBoard** (Helium314), **TaskManager**
-(RohitKushvaha01). Huge thanks to all of them — please support their projects.
+- Tooling: **mtkclient** (bkerler), android-tools, avbtool.
+- Launcher: **Neo-Launcher** (NeoApplications).
+- App suite: **Cromite** (uazo), **F-Droid**, **Aurora Store**, **Fossify** (Camera & Gallery),
+  **Material Files** (zhanghai), **HeliBoard** (Helium314), **TaskManager** (RohitKushvaha01).
+
+Please support these projects.
+
+## License
+
+MIT — see [LICENSE](LICENSE). This repository ships **no** proprietary Medion/MTK firmware; you work
+only with **your own** backup.
+
+> **Disclaimer:** unlocking the bootloader and flashing is done at your own risk. You can void the
+> warranty and, if you mishandle it, brick the device — recoverable as long as your backup and BROM
+> are intact.
+
+---
+
+<sub>Keywords: ALDI TALK Filial Tablet, Medion MD 60447 / MD60447, Model S10242, Medion Lifetab
+S1024X, Aldi kiosk, AldiTalkFilialApp, MediaTek MT6765 / MT8768, medion_l1016b, mtkclient, remove
+kiosk, de-Google, debloat, Docker, Podman, Windows, macOS. — German: Aldi Tablet entsperren,
+Kiosk-Modus / Filial-App entfernen, Medion Lifetab S1024X / S10242 (MD 60447).</sub>
