@@ -1,6 +1,7 @@
 # Medion Lifetab S1024X — un-kiosk + de-Google (no root)
 
-Aldi sold this tablet **bolted shut**: it boots straight into a kiosk app (`AldiTalkFilialApp`) and
+Aldi sold this tablet — the **ALDI TALK Filial Tablet** (Medion **MD 60447**, the case/box reads
+**Model S10242**) — **bolted shut**: it boots straight into a kiosk app (`AldiTalkFilialApp`) and
 that's all you get. No launcher, no settings, no apps — a €100 paperweight with a store demo on it.
 
 This branch (`main`) frees it **without root**: it removes the kiosk, drops in a real launcher, and
@@ -13,9 +14,10 @@ backup over BROM (mtkclient) — the stock ROM boots normally, and it's **fully 
 > Developer options, and an auto-firewalled notification shade — i.e. it fixes the things this no-root
 > build can't. If you want a *genuinely* usable tablet, that's the one. See the table below.
 
-> Keywords: Medion Lifetab S1024X, Aldi kiosk, AldiTalkFilialApp, MT6765, medion_l1016b, achilles6,
-> mtkclient, remove kiosk, de-Google, debloat. (German: *Aldi Tablet entsperren, Kiosk-Modus /
-> Filial-App entfernen, Medion Lifetab S1024X.*)
+> Keywords: ALDI TALK Filial Tablet, Medion MD 60447 / MD60447, Model S10242, Medion Lifetab S1024X,
+> Aldi kiosk, AldiTalkFilialApp, MediaTek MT6765 / MT8768, medion_l1016b, mtkclient, remove kiosk,
+> de-Google, debloat. (German: *Aldi Tablet entsperren, Kiosk-Modus / Filial-App entfernen, Medion
+> Lifetab S1024X / S10242 (MD 60447).*)
 
 ---
 
@@ -46,7 +48,8 @@ fumble it, brick the device (recoverable as long as your backup + BROM are intac
 
 | | |
 |---|---|
-| Device | Medion Lifetab S1024X (`medion_l1016b`, board `achilles6`) |
+| Device | Medion Lifetab **S1024X** (`ro.product.model` = `LIFETAB S1024X`; build `S1024X_EEA`, flavor `medion_l1016b`) |
+| Retail label | Sold as the **"ALDI TALK Filial Tablet"** — the case/box read **Model S10242**, **MD 60447** (`MD60447`). Same device; that's the retail sticker name vs. the internal `S1024X` codename. |
 | SoC | MediaTek MT6765 |
 | Stock | Android 10, A-only, dynamic partitions (`super`) |
 | BROM | unprotected (SBC/SLA/DAA = false) → mtkclient just works |
