@@ -101,7 +101,8 @@ git clone https://github.com/Youpee/medion-lifetab-s1024x-unlock
 cd medion-lifetab-s1024x-unlock
 ```
 
-**First run — do all steps.** Coming back to re-flash? See [Restore & re-flash](#restore--re-flash).
+**First run — do all steps.** Re-flashing? If you already built and haven't run `clean.sh`, you can
+skip straight to flashing (step 2) — see [Restore & re-flash](#restore--re-flash).
 
 ```bash
 # 0a. One-time: install dependencies + mtkclient (also downloads the launcher APK).
@@ -248,7 +249,10 @@ can repeat freely.
   and it's your safety net. **Never delete it.**
 - **Skip `0c` (unlock)** if the bootloader is already unlocked (it stays unlocked across flashes;
   re-running is harmless).
-- **Repeat steps 1–2.** Flashing `super` always re-wipes `/data`, so the tablet comes up fresh.
+- **Skip the build (step 1)** if you already built and **haven't run `scripts/clean.sh`** — the
+  images (`super_unkiosk.img`, `vbmeta_disable.img`) are still in the repo, so you can go straight to
+  **flashing (step 2)**. If you ran `clean.sh` or changed the build, rebuild first.
+- **Flashing (step 2) always re-wipes `/data`**, so the tablet comes up fresh every time.
 
 ---
 
